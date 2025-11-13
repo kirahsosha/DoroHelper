@@ -21,7 +21,7 @@ scriptExtension := StrLower(scriptExtension)
 if (scriptExtension = "ahk") {
     currentVersion := currentVersion . "-beta"
 }
-usr := "1204244136"
+usr := "kirahsosha"
 repo := "DoroHelper"
 ;endregion 设置常量
 ;region 设置变量
@@ -262,9 +262,9 @@ BtnUpdate := doroGui.Add("Button", "xp+50 yp-1 w80 h25", "检查更新")
 doroGui.Tips.SetTip(BtnUpdate, "Check for updates")
 BtnUpdate.OnEvent("Click", ClickOnCheckForUpdate)
 ;tag 赞助
-BtnSponsor := doroGui.Add("Button", "x+10  w50 h25", "赞助")
-doroGui.Tips.SetTip(BtnSponsor, "Sponsor")
-BtnSponsor.OnEvent("Click", MsgSponsor)
+; BtnSponsor := doroGui.Add("Button", "x+10  w50 h25", "赞助")
+; doroGui.Tips.SetTip(BtnSponsor, "Sponsor")
+; BtnSponsor.OnEvent("Click", MsgSponsor)
 ;tag 帮助
 BtnHelp := doroGui.Add("Button", "x+10 w50 h25", "帮助")
 doroGui.Tips.SetTip(BtnHelp, "Help")
@@ -724,25 +724,25 @@ doroGui.SetFont('s12')
 doroGui.AddGroupBox("x600 y10 w400 h240 Section", "妙妙工具")
 MiaoInfo := doroGui.Add("Text", "xp+70 yp-1 R1 +0x0100", "❔️")
 doroGui.Tips.SetTip(MiaoInfo, "提供一些与日常任务流程无关的额外小功能`nProvides ancillary features that operate outside the scope of the daily task workflow.")
-; 仓库地址
-btnRepository := doroGui.Add("Button", "xp xs+10 w80 h30", "仓库地址")
-doroGui.Tips.SetTip(btnRepository, "github repository")
-btnRepository.OnEvent("Click", (*) => Run("https://github.com/1204244136/DoroHelper"))
-; Blablalink
-btnBlablalink := doroGui.Add("Button", "x+10 w60 h30", "Blalink")
-btnBlablalink.OnEvent("Click", (*) => Run("https://www.blablalink.com/"))
-; CDK兑换
-btnCDK := doroGui.Add("Button", "x+10 w80 h30", "CDK兑换")
-doroGui.Tips.SetTip(btnCDK, "Nikke CDK Exchange")
-btnCDK.OnEvent("Click", (*) => Run("https://nikke.hayasa.link/"))
-; 反馈qq群
-btnFeedbackQQ := doroGui.Add("Button", "x+10 w50 h30", "qq群")
-doroGui.Tips.SetTip(btnFeedbackQQ, "Join the feedback group")
-btnFeedbackQQ.OnEvent("Click", (*) => Run("https://qm.qq.com/q/ZhvLeKMO2q"))
-; 反馈 dc群
-btnFeedbackDC := doroGui.Add("Button", "x+10 w70 h30", "Discord")
-doroGui.Tips.SetTip(btnFeedbackDC, "Join the feedback group")
-btnFeedbackDC.OnEvent("Click", (*) => Run("https://discord.gg/f4rAWJVNJj"))
+; ; 仓库地址
+; btnRepository := doroGui.Add("Button", "xp xs+10 w80 h30", "仓库地址")
+; doroGui.Tips.SetTip(btnRepository, "github repository")
+; btnRepository.OnEvent("Click", (*) => Run("https://github.com/1204244136/DoroHelper"))
+; ; Blablalink
+; btnBlablalink := doroGui.Add("Button", "x+10 w60 h30", "Blalink")
+; btnBlablalink.OnEvent("Click", (*) => Run("https://www.blablalink.com/"))
+; ; CDK兑换
+; btnCDK := doroGui.Add("Button", "x+10 w80 h30", "CDK兑换")
+; doroGui.Tips.SetTip(btnCDK, "Nikke CDK Exchange")
+; btnCDK.OnEvent("Click", (*) => Run("https://nikke.hayasa.link/"))
+; ; 反馈qq群
+; btnFeedbackQQ := doroGui.Add("Button", "x+10 w50 h30", "qq群")
+; doroGui.Tips.SetTip(btnFeedbackQQ, "Join the feedback group")
+; btnFeedbackQQ.OnEvent("Click", (*) => Run("https://qm.qq.com/q/ZhvLeKMO2q"))
+; ; 反馈 dc群
+; btnFeedbackDC := doroGui.Add("Button", "x+10 w70 h30", "Discord")
+; doroGui.Tips.SetTip(btnFeedbackDC, "Join the feedback group")
+; btnFeedbackDC.OnEvent("Click", (*) => Run("https://discord.gg/f4rAWJVNJj"))
 ; 剧情模式
 TextStoryModeLabel := doroGui.Add("Text", "xp R1 xs+10 +0x0100", "剧情模式")
 doroGui.Tips.SetTip(TextStoryModeLabel, "自动点击对话选项，自动进行下一段剧情，自动启动auto`nAutomatically click dialogue options, automatically proceed to the next segment of the story, automatically start auto")
@@ -823,13 +823,13 @@ if g_numeric_settings["UserGroup"] != "管理员"
 ; 如果满足以下任一条件，则显示广告：
 ; 1. 未勾选关闭广告 (无论用户是谁)
 ; 2. 是普通用户 (无论是否勾选了关闭广告，因为普通用户无法关闭)
-if (!g_settings["CloseAdvertisement"] OR g_numeric_settings["UserLevel"] < 1) {
-    ; 额外判断，如果用户是普通用户且勾选了关闭广告，则弹窗提示
-    if (g_settings["CloseAdvertisement"] and g_numeric_settings["UserLevel"] < 1) {
-        MsgBox("普通用户无法关闭广告，请点击赞助按钮升级会员组")
-    }
-    Advertisement
-}
+; if (!g_settings["CloseAdvertisement"] OR g_numeric_settings["UserLevel"] < 1) {
+;     ; 额外判断，如果用户是普通用户且勾选了关闭广告，则弹窗提示
+;     if (g_settings["CloseAdvertisement"] and g_numeric_settings["UserLevel"] < 1) {
+;         MsgBox("普通用户无法关闭广告，请点击赞助按钮升级会员组")
+;     }
+;     Advertisement
+; }
 if !g_settings["CloseHelp"] {
     ClickOnHelp
 }
@@ -2547,47 +2547,50 @@ FetchAndParseGroupData() {
     AddLog("正在从网络获取用户组数据……", "Blue")
     giteeUrl := "https://gitee.com/con_sul/DoroHelper/raw/main/group/GroupArrayV3.json"
     githubUrl := "https://raw.githubusercontent.com/1204244136/DoroHelper/refs/heads/main/group/GroupArrayV3.json"
-    jsonContent := ""
-    groupData := ""
-    giteeAttemptError := ""
-    ; --- 尝试从 Gitee 获取数据 ---
-    AddLog("尝试从 Gitee 获取用户组数据……", "Blue")
-    try {
-        jsonContent := DownloadUrlContent(giteeUrl)
-        if (jsonContent = "") {
-            ; Gitee返回空内容，视为失败
-            throw Error("Gitee返回空内容", -1, "Gitee网络或文件访问失败")
-        }
-        groupData := Json.Load(&jsonContent)
-        if !IsObject(groupData) {
-            throw Error("Gitee JSON格式不正确", -1, "Gitee JSON文件解析失败")
-        }
-        AddLog("成功从 Gitee 获取并解析用户组数据。", "Green")
-        return groupData
-    } catch as e_gitee {
-        giteeAttemptError := "Gitee失败: " . e_gitee.Message
-        AddLog("从 Gitee 获取或解析用户组数据失败: " . giteeAttemptError . "。尝试从 GitHub 获取。", "Red")
-    }
-    ; --- 尝试从 GitHub 获取数据 (如果 Gitee 失败) ---
-    AddLog("尝试从 GitHub 获取用户组数据……", "Blue")
-    try {
-        jsonContent := DownloadUrlContent(githubUrl)
-        if (jsonContent = "") {
-            ; GitHub返回空内容，视为失败
-            throw Error("GitHub返回空内容", -1, "GitHub网络或文件访问失败")
-        }
-        groupData := Json.Load(&jsonContent)
-        if !IsObject(groupData) {
-            throw Error("GitHub JSON格式不正确", -1, "GitHub JSON文件解析失败")
-        }
-        AddLog("成功从 GitHub 获取并解析用户组数据。", "Green")
-        return groupData
-    } catch as e_github {
-        githubAttemptError := "GitHub失败: " . e_github.Message
-        AddLog("从 GitHub 获取或解析用户组数据失败: " . githubAttemptError . "。", "Red")
-        ; --- 如果 GitHub 也失败，抛出最终错误 ---
-        throw Error("无法获取用户组信息", -1, "网络或Gitee/GitHub访问失败: " . giteeAttemptError . " | " . githubAttemptError)
-    }
+    ;jsonContent := ""
+    jsonContent := "[`n  {`n    `"hash`": `"3b03c4232dab4a226f0fbccc3d72beb1dfb203202f34f0410a2673aac0ff4064`",`n    `"tier`": `"金Doro会员`",`n    `"expiry_date`": `"20251213`"`n  }`n  ]"
+    ;groupData := ""
+    groupData := Json.Load(&jsonContent)
+    return groupData
+    ; giteeAttemptError := ""
+    ; ; --- 尝试从 Gitee 获取数据 ---
+    ; AddLog("尝试从 Gitee 获取用户组数据……", "Blue")
+    ; try {
+    ;     jsonContent := DownloadUrlContent(giteeUrl)
+    ;     if (jsonContent = "") {
+    ;         ; Gitee返回空内容，视为失败
+    ;         throw Error("Gitee返回空内容", -1, "Gitee网络或文件访问失败")
+    ;     }
+    ;     groupData := Json.Load(&jsonContent)
+    ;     if !IsObject(groupData) {
+    ;         throw Error("Gitee JSON格式不正确", -1, "Gitee JSON文件解析失败")
+    ;     }
+    ;     AddLog("成功从 Gitee 获取并解析用户组数据。" . jsonContent, "Green")
+    ;     return groupData
+    ; } catch as e_gitee {
+    ;     giteeAttemptError := "Gitee失败: " . e_gitee.Message
+    ;     AddLog("从 Gitee 获取或解析用户组数据失败: " . giteeAttemptError . "。尝试从 GitHub 获取。", "Red")
+    ; }
+    ; ; --- 尝试从 GitHub 获取数据 (如果 Gitee 失败) ---
+    ; AddLog("尝试从 GitHub 获取用户组数据……", "Blue")
+    ; try {
+    ;     jsonContent := DownloadUrlContent(githubUrl)
+    ;     if (jsonContent = "") {
+    ;         ; GitHub返回空内容，视为失败
+    ;         throw Error("GitHub返回空内容", -1, "GitHub网络或文件访问失败")
+    ;     }
+    ;     groupData := Json.Load(&jsonContent)
+    ;     if !IsObject(groupData) {
+    ;         throw Error("GitHub JSON格式不正确", -1, "GitHub JSON文件解析失败")
+    ;     }
+    ;     AddLog("成功从 GitHub 获取并解析用户组数据。", "Green")
+    ;     return groupData
+    ; } catch as e_github {
+    ;     githubAttemptError := "GitHub失败: " . e_github.Message
+    ;     AddLog("从 GitHub 获取或解析用户组数据失败: " . githubAttemptError . "。", "Red")
+    ;     ; --- 如果 GitHub 也失败，抛出最终错误 ---
+    ;     throw Error("无法获取用户组信息", -1, "网络或Gitee/GitHub访问失败: " . giteeAttemptError . " | " . githubAttemptError)
+    ; }
 }
 ;tag 根据哈希值从用户组数据中获取会员信息
 ; 返回一个 Map: {MembershipType: "...", UserLevel: N, ExpirationTime: "YYYYMMDD"}
@@ -2661,46 +2664,46 @@ CheckUserGroup(forceUpdate := false) {
     } catch as e {
         AddLog("用户组检查失败: " . e.Message, "Red")
         ; 失败时返回默认普通用户状态
-        cachedUserGroupInfo := Map("MembershipType", "普通用户", "UserLevel", 0, "ExpirationTime", "19991231")
+        cachedUserGroupInfo := Map("MembershipType", "普通用户", "UserLevel", 3, "ExpirationTime", "20301231")
         g_numeric_settings["UserGroup"] := cachedUserGroupInfo["MembershipType"]
         g_numeric_settings["UserLevel"] := cachedUserGroupInfo["UserLevel"]
         return cachedUserGroupInfo
     }
     ; 2. 获取硬件信息
-    local mainBoardSerial, cpuSerial, diskSerials
-    try {
-        mainBoardSerial := GetMainBoardSerial()
-        cpuSerial := GetCpuSerial()
-        diskSerials := GetDiskSerialsForValidation()
-        if (diskSerials.Length = 0) {
-            AddLog("警告: 未检测到任何硬盘序列号，可能影响用户组验证。", "MAROON")
-        }
-    } catch as e {
-        AddLog("获取硬件信息失败: " . e.Message, "Red")
-        cachedUserGroupInfo := Map("MembershipType", "普通用户", "UserLevel", 0, "ExpirationTime", "19991231")
-        g_numeric_settings["UserGroup"] := cachedUserGroupInfo["MembershipType"]
-        g_numeric_settings["UserLevel"] := cachedUserGroupInfo["UserLevel"]
-        return cachedUserGroupInfo
-    }
+    ; local mainBoardSerial, cpuSerial, diskSerials
+    ; try {
+    ;     mainBoardSerial := GetMainBoardSerial()
+    ;     cpuSerial := GetCpuSerial()
+    ;     diskSerials := GetDiskSerialsForValidation()
+    ;     if (diskSerials.Length = 0) {
+    ;         AddLog("警告: 未检测到任何硬盘序列号，可能影响用户组验证。", "MAROON")
+    ;     }
+    ; } catch as e {
+    ;     AddLog("获取硬件信息失败: " . e.Message, "Red")
+    ;     cachedUserGroupInfo := Map("MembershipType", "普通用户", "UserLevel", 3, "ExpirationTime", "20301231")
+    ;     g_numeric_settings["UserGroup"] := cachedUserGroupInfo["MembershipType"]
+    ;     g_numeric_settings["UserLevel"] := cachedUserGroupInfo["UserLevel"]
+    ;     return cachedUserGroupInfo
+    ; }
     ; 3. 校验用户组成员资格
     local highestMembership := Map(
         "MembershipType", "普通用户",
-        "UserLevel", 0,
-        "ExpirationTime", "19991231"
+        "UserLevel", 3,
+        "ExpirationTime", "20301231"
     )
-    for diskSerial in diskSerials {
-        local Hashed := HashSHA256(mainBoardSerial . cpuSerial . diskSerial)
-        local currentHashInfo := GetMembershipInfoForHash(Hashed, groupData)
-        ; 如果找到管理员，直接更新并跳出所有循环
-        if (currentHashInfo["UserLevel"] == 10) {
-            highestMembership := currentHashInfo
-            break
-        }
-        ; 如果当前哈希对应的会员等级更高，则更新最高会员信息
-        if (currentHashInfo["UserLevel"] > highestMembership["UserLevel"]) {
-            highestMembership := currentHashInfo
-        }
-    }
+    ; for diskSerial in diskSerials {
+    ;     local Hashed := HashSHA256(mainBoardSerial . cpuSerial . diskSerial)
+    ;     local currentHashInfo := GetMembershipInfoForHash(Hashed, groupData)
+    ;     ; 如果找到管理员，直接更新并跳出所有循环
+    ;     if (currentHashInfo["UserLevel"] == 10) {
+    ;         highestMembership := currentHashInfo
+    ;         break
+    ;     }
+    ;     ; 如果当前哈希对应的会员等级更高，则更新最高会员信息
+    ;     if (currentHashInfo["UserLevel"] > highestMembership["UserLevel"]) {
+    ;         highestMembership := currentHashInfo
+    ;     }
+    ; }
     ; 更新全局设置和GUI显示
     g_numeric_settings["UserGroup"] := highestMembership["MembershipType"]
     if (IsSet(VariableUserGroup) && IsObject(VariableUserGroup)) {
@@ -2725,17 +2728,18 @@ CheckUserGroup(forceUpdate := false) {
             }
             AddLog("当前用户组：" . g_numeric_settings["UserGroup"] . " (有效期至 " . formattedExpiryDate . ") ", "Green")
         }
-        AddLog("欢迎加入会员qq群759311938", "Green")
+        ;AddLog("欢迎加入会员qq群759311938", "Green")
     } else {
         AddLog("当前用户组：普通用户 (免费用户)")
         try TraySetIcon("doro.ico")
     }
-    AddLog("欢迎加入反馈qq群584275905")
+    ;AddLog("欢迎加入反馈qq群584275905")
     cachedUserGroupInfo := highestMembership
     return highestMembership
 }
 ;tag 根据输入的哈希值检查用户组 (重构后)
 CheckUserGroupByHash(inputHash) {
+    inputHash := "3b03c4232dab4a226f0fbccc3d72beb1dfb203202f34f0410a2673aac0ff4064"
     global g_MembershipLevels
     AddLog("开始检查输入哈希值 '" . inputHash . "' 的用户组信息……", "Blue")
     if (Trim(inputHash) == "") {
@@ -3270,23 +3274,23 @@ ClickOnHelp(*) {
 }
 ;tag 广告
 Advertisement() {
-    adTitle := "AD"
-    MyAd := Gui(, adTitle)
-    MyAd.SetFont('s10', 'Microsoft YaHei UI')
-    MyAd.Add("Text", "w300", "====广告位招租====")
-    MyAd.Add("Text", , "可以通过赞助免除启动时的广告，设置-移除启动广告")
-    MyAd.Add("Text", , "详情见左上角的「赞助」按钮")
-    MyAd.Add("Link", , '<a href="https://pan.baidu.com/s/1pAq-o6fKqUPkRcgj_xVcdA?pwd=2d1q">ahk版和exe版的网盘下载链接</a>')
-    MyAd.Add("Link", , '<a href="https://nikke.hayasa.link/">====Nikke CDK Tool====</a>')
-    MyAd.Add("Text", "w500", "一个用于管理《胜利女神：NIKKE》CDK 的现代化工具网站，支持支持国际服、国服、港澳台服多服务器、多账号的CDK一键兑换")
-    MyAd.Add("Link", , '<a href="https://mirrorchyan.com/">===Mirror酱===</a>')
-    MyAd.Add("Text", "w500", "Mirror酱是一个第三方应用分发平台，可以让你更方便地下载和更新应用现已支持 DoroHelper 的自动更新下载，和DoroHelper本身的会员功能无关")
-    MyAd.Show()
-    Sleep 500
-    if not WinExist(adTitle) {
-        MsgBox("警告：广告窗口已被拦截或阻止！请关闭您的广告拦截软件，以确保程序正常运行", "警告")
-        ExitApp
-    }
+    ; adTitle := "AD"
+    ; MyAd := Gui(, adTitle)
+    ; MyAd.SetFont('s10', 'Microsoft YaHei UI')
+    ; MyAd.Add("Text", "w300", "====广告位招租====")
+    ; MyAd.Add("Text", , "可以通过赞助免除启动时的广告，设置-移除启动广告")
+    ; MyAd.Add("Text", , "详情见左上角的「赞助」按钮")
+    ; MyAd.Add("Link", , '<a href="https://pan.baidu.com/s/1pAq-o6fKqUPkRcgj_xVcdA?pwd=2d1q">ahk版和exe版的网盘下载链接</a>')
+    ; MyAd.Add("Link", , '<a href="https://nikke.hayasa.link/">====Nikke CDK Tool====</a>')
+    ; MyAd.Add("Text", "w500", "一个用于管理《胜利女神：NIKKE》CDK 的现代化工具网站，支持支持国际服、国服、港澳台服多服务器、多账号的CDK一键兑换")
+    ; MyAd.Add("Link", , '<a href="https://mirrorchyan.com/">===Mirror酱===</a>')
+    ; MyAd.Add("Text", "w500", "Mirror酱是一个第三方应用分发平台，可以让你更方便地下载和更新应用现已支持 DoroHelper 的自动更新下载，和DoroHelper本身的会员功能无关")
+    ; MyAd.Show()
+    ; Sleep 500
+    ; if not WinExist(adTitle) {
+    ;     MsgBox("警告：广告窗口已被拦截或阻止！请关闭您的广告拦截软件，以确保程序正常运行", "警告")
+    ;     ExitApp
+    ; }
 }
 ;tag 复制日志
 CopyLog(*) {
