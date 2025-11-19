@@ -1049,24 +1049,24 @@ ClickOnDoro(*) {
     CalculateAndShowSpan()
     finalMessageTitle := "DoroHelper任务完成！"
     finalMessageText := finalMessageText . "Doro完成任务！" . outputText
-    if g_numeric_settings["UserLevel"] < 1 or !g_settings["CloseAdvertisement"] {
-        finalMessageText .= "`n可以支持一下Doro吗"
-        Result := MsgBox(finalMessageText, finalMessageTitle, "YesNo IconI")
-        if Result = "Yes"
-            MsgSponsor
-    }
-    else if g_numeric_settings["UserLevel"] < 10 {
-        ; 普通会员
-        finalMessageText .= "`n感谢你的支持～"
-        MsgBox(finalMessageText, finalMessageTitle, "IconI")
-    }
-    else {
-        ; 管理员
-        finalMessageText .= "`n感谢你的辛苦付出～"
-        MsgBox(finalMessageText, finalMessageTitle, "IconI")
-    }
-    if g_settings["OpenBlablalink"]
-        Run("https://www.blablalink.com/")
+    ; if g_numeric_settings["UserLevel"] < 1 or !g_settings["CloseAdvertisement"] {
+    ;     finalMessageText .= "`n可以支持一下Doro吗"
+    ;     Result := MsgBox(finalMessageText, finalMessageTitle, "YesNo IconI")
+    ;     if Result = "Yes"
+    ;         MsgSponsor
+    ; }
+    ; else if g_numeric_settings["UserLevel"] < 10 {
+    ;     ; 普通会员
+    ;     finalMessageText .= "`n感谢你的支持～"
+    ;     MsgBox(finalMessageText, finalMessageTitle, "IconI")
+    ; }
+    ; else {
+    ;     ; 管理员
+    ;     finalMessageText .= "`n感谢你的辛苦付出～"
+    ;     MsgBox(finalMessageText, finalMessageTitle, "IconI")
+    ; }
+    ; if g_settings["OpenBlablalink"]
+    ;     Run("https://www.blablalink.com/")
     if g_settings["DoroClosing"] {
         if InStr(currentVersion, "beta") {
             MsgBox ("测试版本禁用自动关闭！", "DoroHelper提示", "iconx")
