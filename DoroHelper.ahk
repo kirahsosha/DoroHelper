@@ -14,7 +14,7 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.9.3"
+currentVersion := "v1.9.4"
 ;tag 检查脚本哈希
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
@@ -137,8 +137,9 @@ global g_settings := Map(
     "AutoDeleteOldFile", 0,             ; 自动删除旧版本
     "DoroClosing", 0,                   ; 完成后自动关闭Doro
     "LoopMode", 0,                      ; 完成后自动关闭游戏
-    "OpenBlablalink", 0,                ; 完成后打开Blablalink
     "CheckEvent", 0,                    ; 活动结束提醒
+    "CheckUnderGround", 0,              ; 地面活动提醒
+    "OpenBlablalink", 0,                ; 完成后打开Blablalink
     "AutoStartNikke", 0,                ; 使用脚本启动NIKKE
     "Timedstart", 0,                    ; 定时启动
     ;其他
@@ -278,7 +279,7 @@ doroGui.Tips.SetTip(TextUserGroup, "你可以通点击上方的赞助按钮来�
 VariableUserGroup := doroGui.Add("Text", "x+0.5 w100 R1 +0x0100", g_numeric_settings["UserGroup"])
 ;tag 更新渠道
 TextUpdateChannels := doroGui.Add("Text", "Section x20 y+8 R1 +0x0100", "更新渠道")
-doroGui.Tips.SetTip(TextUpdateChannels, "UpdateChannels`n正式版:稳定，适合大多数用户|Stable: Reliable, recommended for most users.`n测试版:现已弃用|Beta: Now deprecated.")
+doroGui.Tips.SetTip(TextUpdateChannels, "UpdateChannels`n正式版:稳定，适合大多数用户|Stable: Reliable, recommended for most users.`n测试版|Beta")
 cbUpdateChannels := doroGui.Add("DropDownList", "x140 yp w100", ["正式版", "测试版"])
 cbUpdateChannels.Text := g_numeric_settings["UpdateChannels"]
 cbUpdateChannels.OnEvent("Change", (Ctrl, Info) => g_numeric_settings["UpdateChannels"] := Ctrl.Text)
@@ -710,12 +711,15 @@ g_settingPages["After"].Push(cbClearRedProfile)
 cbClearRedBla := AddCheckboxSetting(doroGui, "ClearRedBla", "清除blabla红点", "R1 xs+15")
 doroGui.Tips.SetTip(cbClearRedBla, "Clear blabla Red Dot")
 g_settingPages["After"].Push(cbClearRedBla)
-cbOpenBlablalink := AddCheckboxSetting(doroGui, "OpenBlablalink", "打开Blablalink", "R1 xs")
-doroGui.Tips.SetTip(cbOpenBlablalink, "Open the Blablalink website")
-g_settingPages["After"].Push(cbOpenBlablalink)
-cbCheckEvent := AddCheckboxSetting(doroGui, "CheckEvent", "活动结束提醒", "R1")
+cbCheckUnderGround := AddCheckboxSetting(doroGui, "CheckUnderGround", "地面玩法提醒", "R1 xs+15")
+doroGui.Tips.SetTip(cbCheckUnderGround, "在作战报告达到上限时进行提醒`nUnderGround Reminder:remind you when the combat report reaches the limit")
+g_settingPages["After"].Push(cbCheckUnderGround)
+cbCheckEvent := AddCheckboxSetting(doroGui, "CheckEvent", "活动结束提醒", "R1 xs")
 doroGui.Tips.SetTip(cbCheckEvent, "在大小活动结束前进行提醒`nEvent End Reminder:remind you before the end of major and minor events")
 g_settingPages["After"].Push(cbCheckEvent)
+cbOpenBlablalink := AddCheckboxSetting(doroGui, "OpenBlablalink", "打开Blablalink", "R1")
+doroGui.Tips.SetTip(cbOpenBlablalink, "Open the Blablalink website")
+g_settingPages["After"].Push(cbOpenBlablalink)
 cbDoroClosing := AddCheckboxSetting(doroGui, "DoroClosing", "关闭DoroHelper", "R1")
 doroGui.Tips.SetTip(cbDoroClosing, "Close DoroHelper")
 g_settingPages["After"].Push(cbDoroClosing)
@@ -1030,6 +1034,9 @@ ClickOnDoro(*) {
         if g_settings["ClearRedBla"] {
             ClearRedBla()
         }
+        if g_settings["CheckUnderGround"] {
+            CheckUnderGround()
+        }
         BackToHall
     }
     if g_settings["AutoSwitchLanguage"]
@@ -1240,7 +1247,7 @@ Initialization() {
         AddLog("显示器不足1080p分辨率")
     }
     if TrueRatio < 0.5 {
-        Result := MsgBox("检测到NIKKE窗口尺寸过小，建议按ctrl+3调整游戏画面并重启脚本，是否暂停程序？", , "YesNo")
+        Result := MsgBox("检测到NIKKE窗口尺寸过小，建议按ctrl+3调整游戏画面或全屏运行游戏并重启脚本，是否暂停程序？", , "YesNo")
         if Result = "Yes"
             Pause
     }
@@ -2953,7 +2960,7 @@ MsgSponsor(*) {
     ; 添加 Choose1 确保默认选中第一个
     guiTier := guiSponsor.Add("DropDownList", "Choose1 x125 w100", availableTiers)
     guiSponsor.Tips.SetTip(guiTier, "铜:Copper|银:Silver|金:Gold")
-    guiDuration := guiSponsor.Add("DropDownList", "x+10 yp Choose1 w80", ["1个月", "3个月", "6个月", "12个月", "36个月"])
+    guiDuration := guiSponsor.Add("DropDownList", "x+10 yp Choose1 w80", ["1个月", "3个月", "6个月", "12个月"])
     guiSponsor.Tips.SetTip(guiDuration, "月: Month")
     ; 确定当地货币单位和符号
     PriceData := g_PriceMap.Get(LocaleName, g_DefaultRegionPriceData)
@@ -5935,7 +5942,7 @@ EventLarge() {
     loop {
         if (ok := FindText(&X, &Y, NikkeX + 0.632 * NikkeW . " ", NikkeY + 0.794 * NikkeH . " ", NikkeX + 0.632 * NikkeW + 0.140 * NikkeW . " ", NikkeY + 0.794 * NikkeH + 0.108 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("大活动·GODDESS FALL"), , , , , , , TrueRatio, TrueRatio)) {
             AddLog("已找到大活动")
-            loop 3 {
+            while (ok := FindText(&X, &Y, NikkeX + 0.632 * NikkeW . " ", NikkeY + 0.794 * NikkeH . " ", NikkeX + 0.632 * NikkeW + 0.140 * NikkeW . " ", NikkeY + 0.794 * NikkeH + 0.108 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("大活动·GODDESS FALL"), , , , , , , TrueRatio, TrueRatio)) {
                 UserClick(2782, 1816, TrueRatio)
                 Sleep 500
             }
@@ -5986,7 +5993,7 @@ EventLargeSign() {
 ;tag 挑战
 EventLargeChallenge() {
     AddLog("开始任务：大活动·挑战", "Fuchsia")
-    while (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.340 * NikkeW . " ", NikkeY + 0.812 * NikkeH . " ", NikkeX + 0.340 * NikkeW + 0.120 * NikkeW . " ", NikkeY + 0.812 * NikkeH + 0.049 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("大活动·挑战"), , , , , , , TrueRatio, TrueRatio)) {
+    while (ok := FindText(&X := "wait", &Y := 3, NikkeX + 0.340 * NikkeW . " ", NikkeY + 0.812 * NikkeH . " ", NikkeX + 0.340 * NikkeW + 0.120 * NikkeW . " ", NikkeY + 0.812 * NikkeH + 0.049 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("大活动·挑战"), , , , , , , TrueRatio, TrueRatio)) {
         AddLog("尝试进入对应活动页")
         FindText().Click(X, Y, "L")
         Sleep 500
@@ -6534,13 +6541,46 @@ ClearRedProfile() {
 ;tag 清除bla红点
 ClearRedBla() {
     AddLog("清除bla红点", "Fuchsia")
-    if (ok := FindText(&X, &Y, NikkeX + 0.008 * NikkeW . " ", NikkeY + 0.174 * NikkeH . " ", NikkeX + 0.008 * NikkeW + 0.041 * NikkeW . " ", NikkeY + 0.174 * NikkeH + 0.084 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("Bla的图标"), , , , , , , TrueRatio, TrueRatio)) {
+    while (ok := FindText(&X, &Y, NikkeX + 0.034 * NikkeW . " ", NikkeY + 0.169 * NikkeH . " ", NikkeX + 0.034 * NikkeW + 0.015 * NikkeW . " ", NikkeY + 0.169 * NikkeH + 0.028 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红底的N图标"), , , , , , , TrueRatio, TrueRatio)) {
         FindText().Click(X, Y, "L")
         Sleep 3000
+        UserClick(1554, 464, TrueRatio)
+        Sleep 1000
+        Confirm
+        Sleep 1000
     }
-    UserClick(1554, 464, TrueRatio)
-    Sleep 1000
     BackToHall()
+}
+;tag 地面玩法提醒
+CheckUnderGround(*) {
+    global finalMessageText
+    AddLog("检查地面玩法", "Fuchsia")
+    if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.658 * NikkeW . " ", NikkeY + 0.639 * NikkeH . " ", NikkeX + 0.658 * NikkeW + 0.040 * NikkeW . " ", NikkeY + 0.639 * NikkeH + 0.066 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("方舟的图标"), , 0, , , , , TrueRatio, TrueRatio)) {
+        AddLog("点击作战出击")
+        FindText().Click(X, Y + 200 * TrueRatio, "L")
+        Sleep 1000
+    }
+    if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.397 * NikkeW . " ", NikkeY + 0.594 * NikkeH . " ", NikkeX + 0.397 * NikkeW + 0.037 * NikkeW . " ", NikkeY + 0.594 * NikkeH + 0.042 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("地面玩法·地面"), , , , , , , TrueRatio, TrueRatio)) {
+        AddLog("点击地面玩法")
+        FindText().Click(X, Y, "L")
+        Sleep 1000
+    }
+    if (ok := FindText(&X := "wait", &Y := 10, NikkeX + 0.978 * NikkeW . " ", NikkeY + 0.104 * NikkeH . " ", NikkeX + 0.978 * NikkeW + 0.019 * NikkeW . " ", NikkeY + 0.104 * NikkeH + 0.035 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("地面玩法·任务的图标"), , , , , , , TrueRatio, TrueRatio)) {
+        Sleep 1000
+        AddLog("点击任务")
+        FindText().Click(X, Y, "L")
+        Sleep 1000
+    }
+    if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.593 * NikkeW . " ", NikkeY + 0.206 * NikkeH . " ", NikkeX + 0.593 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.206 * NikkeH + 0.019 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("地面玩法·21"), , , , , , , TrueRatio, TrueRatio)) {
+        AddLog("作战报告已达到上限")
+        finalMessageText := finalMessageText . "作战报告已达到上限！`n"
+        FindText().Click(X, Y, "L")
+        Sleep 1000
+    }
+    else AddLog("作战报告未达到上限")
+    Confirm
+    Sleep 500
+    GoBack
 }
 ;endregion 任务完成后
 ;region 妙妙工具
