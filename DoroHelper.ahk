@@ -3173,7 +3173,7 @@ CheckUserGroup(forceUpdate := false) {
     g_numeric_settings["UserLevel"] := highestMembership["UserLevel"]
     highestMembership["IsPremium"] := g_numeric_settings["UserLevel"] > 0
     if (highestMembership["IsPremium"]) {
-        local formattedExpiryDate := SubStr(highestMembership["VirtualExpiryDate"], 1, 4) . "-" . SubStr(highestMembership["VirtualExpiryDate"], 5, 2) . "-" . SubStr(highestMembership["VirtualExpiryDate"], 7, 2)
+        local formattedExpiryDate := ""
         if (g_numeric_settings["UserLevel"] == 3) {
             try TraySetIcon("icon\GoldDoro.ico")
         } else if (g_numeric_settings["UserLevel"] == 2) {
