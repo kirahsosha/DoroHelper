@@ -4011,11 +4011,11 @@ Challenge() {
     }
     if (ok := FindText(&X := "wait", &Y := 2, NikkeX + 0.354 * NikkeW . " ", NikkeY + 0.344 * NikkeH . " ", NikkeX + 0.354 * NikkeW + 0.052 * NikkeW . " ", NikkeY + 0.344 * NikkeH + 0.581 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红色的关卡的循环图标"), , , , , , , TrueRatio, TrueRatio)) {
         Sleep 1000
-        AddLog("点击扫荡关卡")
+        AddLog("点击初见关卡")
         FindText().Click(X + 50 * TrueRatio, Y, "L")
     }
     else if (ok := FindText(&X, &Y, NikkeX + 0.354 * NikkeW . " ", NikkeY + 0.344 * NikkeH . " ", NikkeX + 0.354 * NikkeW + 0.052 * NikkeW . " ", NikkeY + 0.344 * NikkeH + 0.581 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("黄色的关卡的循环图标"), , , , , , 3, TrueRatio, TrueRatio)) {
-        AddLog("点击初见关卡")
+        AddLog("点击扫荡关卡")
         FindText().Click(X, Y, "L")
     }
     EnterToBattle
@@ -5222,7 +5222,7 @@ InterceptionAnomaly() {
         Sleep 1000
     }
     Confirm
-    while !(ok := FindText(&X, &Y, NikkeX + 0.580 * NikkeW . " ", NikkeY + 0.956 * NikkeH . " ", NikkeX + 0.580 * NikkeW + 0.074 * NikkeW . " ", NikkeY + 0.956 * NikkeH + 0.027 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红字的异常"), , , , , , , TrueRatio, TrueRatio)) {
+    while !(ok := FindText(&X, &Y, NikkeX + 0.589 * NikkeW . " ", NikkeY + 0.859 * NikkeH . " ", NikkeX + 0.589 * NikkeW + 0.054 * NikkeW . " ", NikkeY + 0.859 * NikkeH + 0.095 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红色的异常拦截图标"), , , , , , , TrueRatio, TrueRatio)) {
         Confirm
         if A_Index > 20 {
             MsgBox("异常个体拦截战未解锁！", "MAROON")
@@ -5705,7 +5705,7 @@ AwardPass() {
             AddLog("1通行证模式")
         }
         ; 检查红点并执行通行证
-        if (ok := FindText(&X := "wait", &Y := 2, NikkeX + 0.982 * NikkeW . " ", NikkeY + 0.126 * NikkeH . " ", NikkeX + 0.982 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.126 * NikkeH + 0.032 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
+        if (ok := FindText(&X := "wait", &Y := 2, NikkeX + 0.983 * NikkeW . " ", NikkeY + 0.131 * NikkeH . " ", NikkeX + 0.983 * NikkeW + 0.017 * NikkeW . " ", NikkeY + 0.131 * NikkeH + 0.029 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
             FindText().Click(X - 50 * TrueRatio, Y + 50 * TrueRatio, "L")
             t := t + 1
             AddLog("执行第" t "个通行证")
