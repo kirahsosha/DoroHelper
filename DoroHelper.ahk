@@ -2951,7 +2951,7 @@ FetchAndParseGroupData() {
     giteeUrl := "https://gitee.com/con_sul/DoroHelper/raw/main/group/GroupArrayV4.json"
     githubUrl := "https://raw.githubusercontent.com/1204244136/DoroHelper/refs/heads/main/group/GroupArrayV4.json"
     ;jsonContent := ""
-    jsonContent := "[`n  {`n    `"hash`": `"3b03c4232dab4a226f0fbccc3d72beb1dfb203202f34f0410a2673aac0ff4064`",`n    `"tier`": `"金Doro会员`",`n    `"expiry_date`": `"20251213`"`n  }`n  ]"
+    jsonContent := "[`n  {`n    `"hash`": `"896f5ff33472f2a8666785c33f5c102844532f79fb121115c4781aa8ee31f2c0`",`n    `"tier`": `"金Doro会员`",`n    `"expiry_date`": `"20351213`"`n  }`n  ]"
     ;groupData := ""
     groupData := Json.Load(&jsonContent)
     return groupData
