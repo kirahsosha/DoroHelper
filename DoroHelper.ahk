@@ -4216,6 +4216,7 @@ AdvanceMode(Picture, Picture2?) {
             }
             if (BattleActive == 0) {
                 AddLog("关卡无法进入，切换识图类型")
+                Sleep 1000
                 continue
             }
             if (BattleActive == 2) {
