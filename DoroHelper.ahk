@@ -5235,7 +5235,7 @@ InterceptionAnomaly() {
     FindText().Click(X, Y + 100 * TrueRatio, "L")
     Sleep 500
     Confirm
-    if t > 1 {
+    ;if t > 1 {
         Sleep 2000
         switch g_numeric_settings["InterceptionBoss"] {
             case 1:
@@ -5257,7 +5257,7 @@ InterceptionAnomaly() {
                 MsgBox "BOSS选择错误！"
                 Pause
         }
-    }
+    ;}
     Sleep 1000
     while True {
         if g_settings["InterceptionReminder"] {
@@ -5426,14 +5426,36 @@ AwardAdvise() {
                 }
             }
             else if (ok := FindText(&X, &Y, NikkeX + 0.501 * NikkeW . " ", NikkeY + 0.726 * NikkeH . " ", NikkeX + 0.501 * NikkeW + 0.130 * NikkeW . " ", NikkeY + 0.726 * NikkeH + 0.059 * NikkeH . " ", 0.2 * PicTolerance, 0.2 * PicTolerance, FindText().PicLib("快速咨询的图标"), , , , , , , TrueRatio, TrueRatio)) {
-                AddLog("尝试快速咨询")
-                FindText().Click(X, Y, "L")
+                ; AddLog("尝试快速咨询")
+                ; FindText().Click(X, Y, "L")
+                ; Sleep 1000
+                ; if (ok := FindText(&X, &Y, NikkeX + 0.506 * NikkeW . " ", NikkeY + 0.600 * NikkeH . " ", NikkeX + 0.506 * NikkeW + 0.125 * NikkeW . " ", NikkeY + 0.600 * NikkeH + 0.054 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("带圈白勾"), , , , , , , TrueRatio, TrueRatio)) {
+                ;     FindText().Click(X, Y, "L")
+                ;     AddLog("已咨询" A_Index "次", "GREEN")
+                ;     Sleep 1000
+                ; }
+                AddLog("尝试普通咨询")
+                FindText().Click(X + 50 * TrueRatio, Y, "L")
                 Sleep 1000
                 if (ok := FindText(&X, &Y, NikkeX + 0.506 * NikkeW . " ", NikkeY + 0.600 * NikkeH . " ", NikkeX + 0.506 * NikkeW + 0.125 * NikkeW . " ", NikkeY + 0.600 * NikkeH + 0.054 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("带圈白勾"), , , , , , , TrueRatio, TrueRatio)) {
                     FindText().Click(X, Y, "L")
-                    AddLog("已咨询" A_Index "次", "GREEN")
                     Sleep 1000
+                    AddLog("已咨询" A_Index "次")
                 }
+                Sleep 1000
+                while true {
+                    AddLog("随机点击对话框")
+                    UserClick(1894, 1440, TrueRatio) ;点击1号位默认位置
+                    Sleep 200
+                    UserClick(1903, 1615, TrueRatio) ;点击2号位默认位置
+                    Sleep 200
+                    Send "{]}" ;尝试跳过
+                    Sleep 200
+                    if A_Index > 5 and (ok := FindText(&X, &Y, NikkeX + 0.003 * NikkeW . " ", NikkeY + 0.009 * NikkeH . " ", NikkeX + 0.003 * NikkeW + 0.069 * NikkeW . " ", NikkeY + 0.009 * NikkeH + 0.050 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("圈中的感叹号"), , , , , , , TrueRatio, TrueRatio)) {
+                        break
+                    }
+                }
+                Sleep 1000
             }
             else AddLog("该妮姬已咨询")
         }
