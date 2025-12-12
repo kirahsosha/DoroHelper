@@ -18,11 +18,17 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.9.6"
-;tag 检查脚本哈希
+currentVersion := "v1.9.7"
+; 判断拓展名
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
+; 检查是否为 AHK 脚本
 if (scriptExtension = "ahk") {
+    if RegExMatch(currentVersion, "\.(\d+)$", &match) {
+        patchNumber := match.1
+        newPatchNumber := patchNumber + 1
+        currentVersion := RegExReplace(currentVersion, "\.(\d+)$", "." . newPatchNumber)
+    }
     currentVersion := currentVersion . "-beta"
 }
 usr := "kirahsosha"
@@ -146,6 +152,7 @@ global g_settings := Map(
     "OpenBlablalink", 0,                ; 完成后打开Blablalink
     "AutoStartNikke", 0,                ; 使用脚本启动NIKKE
     "Timedstart", 0,                    ; 定时启动
+    "Autostart", 0,                     ; 自动启动
     ;其他
     "AutoFill", 0,                      ; 自动填充加成妮姬
     "CheckAuto", 0,                     ; 开启自动射击和爆裂
@@ -160,6 +167,7 @@ global g_numeric_settings := Map(
     "TestModeValue", "",                ; 调试模式值
     "StartupTime", "",                  ; 定时启动时间
     "StartupPath", "",                  ; 启动路径
+    "StartDelay", "",                   ; 启动延迟
     "SleepTime", 1000,                  ; 默认等待时间
     "InterceptionBossNormal", 1,        ; 普通拦截战BOSS选择
     "InterceptionBoss", 1,              ; 异常拦截战BOSS选择
@@ -435,6 +443,9 @@ g_settingPages["Login"].Push(StartupTimeEdit)
 cbLoopMode := AddCheckboxSetting(doroGui, "LoopMode", "自律模式", "xs+20 R1 +0x0100")
 doroGui.Tips.SetTip(cbLoopMode, "勾选后，当 DoroHelper 完成所有已选任务后，NIKKE将自动退出，同时会自动重启Doro，以便再次定时启动`nLoopMode:If checked, when DoroHelper completes all selected tasks, NIKKE will automatically exit, and Doro will automatically restart to facilitate timed restarts.")
 g_settingPages["Login"].Push(cbLoopMode)
+SetAutostart := AddCheckboxSetting(doroGui, "Autostart", "自动启动[金Doro]", "xs R1")
+doroGui.Tips.SetTip(SetAutostart, "勾选后，脚本会在启动后经过10秒延迟后自动视为点击DORO！`nThe script will be automatically regarded as a click on DORO after a 10-second delay after startup.")
+g_settingPages["Login"].Push(SetAutostart)
 ;tag 二级商店Shop
 SetShop := doroGui.Add("Text", "x290 y40 R1 +0x0100 Section", "====商店选项====")
 g_settingPages["Shop"].Push(SetShop)
@@ -854,6 +865,15 @@ if g_settings["AutoDeleteOldFile"]
 ;tag 检查更新
 if g_settings["AutoCheckUpdate"]
     CheckForUpdate(false)
+;tag 自动启动
+if g_settings["Autostart"] {
+    if g_numeric_settings["UserLevel"] >= 3 {
+        AutoStartDoro()
+    } else {
+        MsgBox("当前用户组不支持自动启动，请点击左上角赞助按钮升级会员组或取消勾选该功能，脚本即将暂停")
+        Pause
+    }
+}
 ;tag 定时启动
 if g_settings["Timedstart"] {
     if g_numeric_settings["UserLevel"] >= 3 {
@@ -1250,6 +1270,11 @@ Initialization() {
         if Result = "Yes"
             Pause
     }
+}
+AutoStartDoro() {
+    AddLog("等待10秒后自动启动DoroHelper……")
+    Sleep 10000
+    ClickOnDoro()
 }
 ;tag 定时启动
 StartDailyTimer() {
@@ -3469,8 +3494,7 @@ UserPress(sX, sY, k) {
     uX := Round(sX * k) ;计算转换后的坐标
     uY := Round(sY * k)
     CoordMode "Mouse", "Client"
-    Send "{Click " uX " " uY " " 0 "}" ;点击转换后的坐标
-    Send "Click " "Down" "}"
+    Send "{Click " uX " " uY " Down}"
 }
 ;tag 移动
 UserMove(sX, sY, k) {
@@ -3961,13 +3985,26 @@ BattleSettlement(currentVictory := 0, modes*) {
             BattleSettlement(currentVictory)
         }
     }
+    ;有灰色的下一关卡代表赢了但次数耗尽
+    else if (ok := FindText(&X, &Y, NikkeX + 0.889 * NikkeW . " ", NikkeY + 0.912 * NikkeH . " ", NikkeX + 0.889 * NikkeW + 0.103 * NikkeW . " ", NikkeY + 0.912 * NikkeH + 0.081 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("灰色的下一关卡"), , , , , , , TrueRatio, TrueRatio)) {
+        AddLog("战斗结束！")
+        currentVictory := currentVictory + 1
+        if currentVictory > 1 {
+            AddLog("共胜利" currentVictory "次")
+        }
+        GoBack
+        Sleep 1000
+        Send "{]}"
+        LastVictoryCount := currentVictory
+        return True
+    }
     ;没有编队也没有下一关就点Esc（普通情况或者爬塔次数用完了）
     else {
         AddLog("战斗结束！")
         GoBack
         Sleep 1000
         Send "{]}"
-        LastVictoryCount := currentVictory ; 更新全局变量
+        LastVictoryCount := currentVictory
         return True
     }
 }
@@ -4182,6 +4219,53 @@ AdvanceMode(Picture, Picture2?) {
         }
         Sleep 3000
         Send "{]}" ;防止最后一关剧情卡死
+    }
+}
+;tag 通用商店购买处理逻辑
+ProcessPurchaseList(PurchaseItems, Options := Map()) {
+    ; Options 参数支持: "CheckCredit" (检查信用点), "CheckMax" (检查MAX按钮)
+    for Name, item in PurchaseItems {
+        if (!item.Setting) {
+            continue ; 如果设置未开启，则跳过此物品
+        }
+        ; 查找物品
+        if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.049 * NikkeW, NikkeY + 0.479 * NikkeH, NikkeX + 0.049 * NikkeW + 0.940 * NikkeW, NikkeY + 0.479 * NikkeH + 0.439 * NikkeH, item.Tolerance, item.Tolerance, item.Text, , , , , , 1, TrueRatio, TrueRatio)) {
+            ; 遍历找到的所有物品 (例如多个手册)
+            loop ok.Length {
+                FindText().Click(ok[A_Index].x, ok[A_Index].y, "L")
+                AddLog("已找到" . Name)
+                Sleep 1000
+                ; 特殊逻辑：普通商店芯尘盒需要检查是否为信用点购买
+                if (Options.Has("CheckCredit") && Name = "芯尘盒") {
+                    if (!FindText(&X := "wait", &Y := 2, NikkeX + 0.430 * NikkeW . " ", NikkeY + 0.716 * NikkeH . " ", NikkeX + 0.430 * NikkeW + 0.139 * NikkeW . " ", NikkeY + 0.716 * NikkeH + 0.034 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("信用点的图标"), , 0, , , , , TrueRatio, TrueRatio)) {
+                        AddLog("未检测到信用点支付选项，跳过")
+                        Confirm()
+                        Sleep 1000
+                        continue
+                    }
+                }
+                ; 特殊逻辑：废铁商店需要点击MAX
+                if (Options.Has("CheckMax")) {
+                    if (FindText(&X := "wait", &Y := 2, NikkeX + 0.590 * NikkeW . " ", NikkeY + 0.595 * NikkeH . " ", NikkeX + 0.590 * NikkeW + 0.038 * NikkeW . " ", NikkeY + 0.595 * NikkeH + 0.070 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("MAX"), , 0, , , , , TrueRatio, TrueRatio)) {
+                        FindText().Click(X, Y, "L")
+                        Sleep 1000
+                    }
+                }
+                ; 点击购买 (带圈白勾)
+                if (FindText(&X := "wait", &Y := 2, NikkeX + 0.506 * NikkeW . " ", NikkeY + 0.786 * NikkeH . " ", NikkeX + 0.506 * NikkeW + 0.088 * NikkeW . " ", NikkeY + 0.786 * NikkeH + 0.146 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("带圈白勾"), , 0, , , , , TrueRatio, TrueRatio)) {
+                    Sleep 3000
+                    AddLog("购买" . Name)
+                    FindText().Click(X, Y, "L")
+                    Sleep 1000
+                    ; 确认并返回商店主界面 (检查左上角百货商店图标)
+                    while !(FindText(&X := "wait", &Y := 1, NikkeX + 0.003 * NikkeW . " ", NikkeY + 0.007 * NikkeH . " ", NikkeX + 0.003 * NikkeW + 0.089 * NikkeW . " ", NikkeY + 0.007 * NikkeH + 0.054 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("左上角的百货商店"), , 0, , , , , TrueRatio, TrueRatio)) {
+                        Confirm()
+                    }
+                }
+            }
+        } else {
+            AddLog(Name . "未找到，跳过购买")
+        }
     }
 }
 ;endregion 流程辅助函数
@@ -4399,54 +4483,16 @@ ShopGeneral() {
         return
     }
     Sleep 1000
-    ; 定义所有可购买物品的信息 (使用 Map)
+    ; 定义物品
     PurchaseItems := Map(
-        "免费商品", {
-            Text: FindText().PicLib("红点"),
-            Setting: g_settings["ShopGeneralFree"],
-            Tolerance: 0.4 * PicTolerance },
-        "芯尘盒", {
-            Text: FindText().PicLib("芯尘盒"),
-            Setting: g_settings["ShopGeneralDust"],
-            Tolerance: 0.2 * PicTolerance },
-        "简介个性化礼包", {
-            Text: FindText().PicLib("简介个性化礼包"),
-            Setting: g_settings["ShopGeneralPackage"],
-            Tolerance: 0.2 * PicTolerance }
+        "免费商品", { Text: FindText().PicLib("红点"), Setting: g_settings["ShopGeneralFree"], Tolerance: 0.2 * PicTolerance },
+        "芯尘盒", { Text: FindText().PicLib("芯尘盒"), Setting: g_settings["ShopGeneralDust"], Tolerance: 0.2 * PicTolerance },
+        "简介个性化礼包", { Text: FindText().PicLib("简介个性化礼包"), Setting: g_settings["ShopGeneralPackage"], Tolerance: 0.2 * PicTolerance }
     )
     loop 2 {
-        for Name, item in PurchaseItems {
-            if (!item.Setting) {
-                continue ; 如果设置未开启，则跳过此物品
-            }
-            if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.061 * NikkeW . " ", NikkeY + 0.493 * NikkeH . " ", NikkeX + 0.061 * NikkeW + 0.416 * NikkeW . " ", NikkeY + 0.493 * NikkeH + 0.038 * NikkeH . " ", item.Tolerance, item.Tolerance, item.Text, , , , , , , TrueRatio, TrueRatio)) {
-                loop ok.Length {
-                    AddLog("购买" . Name)
-                    FindText().Click(ok[A_Index].x, ok[A_Index].y, "L")
-                    Sleep 1000
-                    if name = "芯尘盒" {
-                        if (ok0 := FindText(&X := "wait", &Y := 2, NikkeX + 0.430 * NikkeW . " ", NikkeY + 0.716 * NikkeH . " ", NikkeX + 0.430 * NikkeW + 0.139 * NikkeW . " ", NikkeY + 0.716 * NikkeH + 0.034 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("信用点的图标"), , 0, , , , , TrueRatio, TrueRatio)) {
-                            AddLog("检测到信用点支付选项")
-                        }
-                        else {
-                            AddLog("未检测到信用点支付选项")
-                            Confirm
-                            Sleep 1000
-                            continue
-                        }
-                    }
-                    if (ok1 := FindText(&X := "wait", &Y := 2, NikkeX + 0.506 * NikkeW . " ", NikkeY + 0.786 * NikkeH . " ", NikkeX + 0.506 * NikkeW + 0.088 * NikkeW . " ", NikkeY + 0.786 * NikkeH + 0.146 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("带圈白勾"), , 0, , , , , TrueRatio, TrueRatio)) {
-                        FindText().Click(X, Y, "L")
-                        Sleep 1000
-                    }
-                    while !(ok2 := FindText(&X := "wait", &Y := 1, NikkeX + 0.003 * NikkeW . " ", NikkeY + 0.007 * NikkeH . " ", NikkeX + 0.003 * NikkeW + 0.089 * NikkeW . " ", NikkeY + 0.007 * NikkeH + 0.054 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("左上角的百货商店"), , 0, , , , , TrueRatio, TrueRatio)) {
-                        Confirm
-                    }
-                }
-            } else {
-                AddLog(Name . "未找到，跳过购买")
-            }
-        }
+        ; 调用通用处理函数，开启信用点检查
+        ProcessPurchaseList(PurchaseItems, Map("CheckCredit", true))
+        ; 刷新逻辑保持不变
         while (ok := FindText(&X, &Y, NikkeX + 0.173 * NikkeW . " ", NikkeY + 0.423 * NikkeH . " ", NikkeX + 0.173 * NikkeW + 0.034 * NikkeW . " ", NikkeY + 0.423 * NikkeH + 0.050 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("FREE"), , , , , , , TrueRatio, TrueRatio)) {
             AddLog("尝试刷新商店")
             FindText().Click(X - 100 * TrueRatio, Y + 30 * TrueRatio, "L")
@@ -4458,7 +4504,7 @@ ShopGeneral() {
             }
         } else {
             AddLog("没有免费刷新次数了，跳过刷新")
-            break ; 退出外层 loop 2 循环，因为没有免费刷新了
+            break
         }
         Sleep 2000
     }
@@ -4470,70 +4516,22 @@ ShopArena() {
         AddLog("进入竞技场商店")
         FindText().Click(X, Y, "L")
         Sleep 1000
-    }
-    else {
+    } else {
         AddLog("竞技场商店图标未找到", "Red")
         return
     }
-    ; 定义所有可购买物品的信息 (使用 Map)
     PurchaseItems := Map(
-        "燃烧代码手册", {
-            Text: FindText().PicLib("燃烧代码的图标"),
-            Setting: g_settings["ShopArenaBookFire"],
-            Tolerance: 0.2 * PicTolerance },
-        "水冷代码手册", {
-            Text: FindText().PicLib("水冷代码的图标"),
-            Setting: g_settings["ShopArenaBookWater"],
-            Tolerance: 0.2 * PicTolerance },
-        "风压代码手册", {
-            Text: FindText().PicLib("风压代码的图标"),
-            Setting: g_settings["ShopArenaBookWind"],
-            Tolerance: 0.3 * PicTolerance },
-        "电击代码手册", {
-            Text: FindText().PicLib("电击代码的图标"),
-            Setting: g_settings["ShopArenaBookElec"],
-            Tolerance: 0.2 * PicTolerance },
-        "铁甲代码手册", {
-            Text: FindText().PicLib("铁甲代码的图标"),
-            Setting: g_settings["ShopArenaBookIron"],
-            Tolerance: 0.2 * PicTolerance },
-        "代码手册宝箱", {
-            Text: FindText().PicLib("代码手册选择宝箱的图标"),
-            Setting: g_settings["ShopArenaBookBox"],
-            Tolerance: 0.3 * PicTolerance },
-        "简介个性化礼包", {
-            Text: FindText().PicLib("简介个性化礼包"),
-            Setting: g_settings["ShopArenaPackage"],
-            Tolerance: 0.3 * PicTolerance },
-        "公司武器熔炉", {
-            Text: FindText().PicLib("公司武器熔炉"),
-            Setting: g_settings["ShopArenaFurnace"],
-            Tolerance: 0.3 * PicTolerance }
+        "燃烧代码手册", { Text: FindText().PicLib("燃烧代码的图标"), Setting: g_settings["ShopArenaBookFire"], Tolerance: 0.2 * PicTolerance },
+        "水冷代码手册", { Text: FindText().PicLib("水冷代码的图标"), Setting: g_settings["ShopArenaBookWater"], Tolerance: 0.2 * PicTolerance },
+        "风压代码手册", { Text: FindText().PicLib("风压代码的图标"), Setting: g_settings["ShopArenaBookWind"], Tolerance: 0.3 * PicTolerance },
+        "电击代码手册", { Text: FindText().PicLib("电击代码的图标"), Setting: g_settings["ShopArenaBookElec"], Tolerance: 0.2 * PicTolerance },
+        "铁甲代码手册", { Text: FindText().PicLib("铁甲代码的图标"), Setting: g_settings["ShopArenaBookIron"], Tolerance: 0.2 * PicTolerance },
+        "代码手册宝箱", { Text: FindText().PicLib("代码手册选择宝箱的图标"), Setting: g_settings["ShopArenaBookBox"], Tolerance: 0.3 * PicTolerance },
+        "简介个性化礼包", { Text: FindText().PicLib("简介个性化礼包"), Setting: g_settings["ShopArenaPackage"], Tolerance: 0.3 * PicTolerance },
+        "公司武器熔炉", { Text: FindText().PicLib("公司武器熔炉"), Setting: g_settings["ShopArenaFurnace"], Tolerance: 0.3 * PicTolerance }
     )
-    ; 遍历并购买所有物品
-    for Name, item in PurchaseItems {
-        if (!item.Setting) {
-            continue ; 如果设置未开启，则跳过此物品
-        }
-        if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.061 * NikkeW . " ", NikkeY + 0.499 * NikkeH . " ", NikkeX + 0.061 * NikkeW + 0.499 * NikkeW . " ", NikkeY + 0.499 * NikkeH + 0.119 * NikkeH . " ", item.Tolerance, item.Tolerance, item.Text, , , , , , , TrueRatio, TrueRatio)) {
-            ; 手册要根据找到个数多次执行
-            loop ok.Length {
-                FindText().Click(ok[A_Index].x, ok[A_Index].y, "L")
-                if (ok1 := FindText(&X := "wait", &Y := 2, NikkeX + 0.506 * NikkeW . " ", NikkeY + 0.786 * NikkeH . " ", NikkeX + 0.506 * NikkeW + 0.088 * NikkeW . " ", NikkeY + 0.786 * NikkeH + 0.146 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("带圈白勾"), , 0, , , , , TrueRatio, TrueRatio)) {
-                    Sleep 1500
-                    AddLog("购买" . Name)
-                    FindText().Click(X, Y, "L")
-                    Sleep 1500
-                    while !(ok2 := FindText(&X := "wait", &Y := 1, NikkeX + 0.003 * NikkeW . " ", NikkeY + 0.007 * NikkeH . " ", NikkeX + 0.003 * NikkeW + 0.089 * NikkeW . " ", NikkeY + 0.007 * NikkeH + 0.054 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("左上角的百货商店"), , 0, , , , , TrueRatio, TrueRatio)) {
-                        Confirm
-                    }
-                }
-            }
-        }
-        else {
-            AddLog(Name . "未找到，跳过购买")
-        }
-    }
+    ; 调用通用处理函数
+    ProcessPurchaseList(PurchaseItems)
 }
 ;tag 废铁商店
 ShopRecycling() {
@@ -4547,66 +4545,17 @@ ShopRecycling() {
     if (ok := FindText(&X, &Y, NikkeX + 0.053 * NikkeW . " ", NikkeY + 0.482 * NikkeH . " ", NikkeX + 0.053 * NikkeW + 0.938 * NikkeW . " ", NikkeY + 0.482 * NikkeH + 0.236 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("商店·限时图标"), , 0, , , , , TrueRatio, TrueRatio)) {
         Reopen := true
     }
-    ; 定义所有可购买物品的信息 (使用 Map)
     PurchaseItems := Map(
-        "珠宝", {
-            Text: FindText().PicLib("珠宝"),
-            Setting: g_settings["ShopRecyclingGem"],
-            Tolerance: 0.2 * PicTolerance },
-        "好感券", {
-            Text: FindText().PicLib("黄色的礼物图标"),
-            Setting: g_settings["ShopRecyclingVoucher"],
-            Tolerance: 0.3 * PicTolerance },
-        "养成资源", {
-            Text: FindText().PicLib("资源的图标"),
-            Setting: g_settings["ShopRecyclingResources"],
-            Tolerance: 0.2 * PicTolerance },
-        "信用点", {
-            Text: FindText().PicLib("黄色的信用点图标"),
-            Setting: g_settings["ShopRecyclingResources"],
-            Tolerance: 0.3 * PicTolerance },
-        "团队合作宝箱", {
-            Text: FindText().PicLib("团队合作宝箱图标"),
-            Setting: g_settings["ShopRecyclingTeamworkBox"],
-            Tolerance: 0.25 * PicTolerance },
-        "保养工具箱", {
-            Text: FindText().PicLib("保养工具箱图标"),
-            Setting: g_settings["ShopRecyclingKitBox"],
-            Tolerance: 0.3 * PicTolerance },
-        "企业精选武装", {
-            Text: FindText().PicLib("企业精选武装图标"),
-            Setting: g_settings["ShopRecyclingArms"],
-            Tolerance: 0.3 * PicTolerance }
+        "珠宝", { Text: FindText().PicLib("珠宝"), Setting: g_settings["ShopRecyclingGem"], Tolerance: 0.2 * PicTolerance },
+        "好感券", { Text: FindText().PicLib("黄色的礼物图标"), Setting: g_settings["ShopRecyclingVoucher"], Tolerance: 0.3 * PicTolerance },
+        "养成资源", { Text: FindText().PicLib("资源的图标"), Setting: g_settings["ShopRecyclingResources"], Tolerance: 0.2 * PicTolerance },
+        "信用点", { Text: FindText().PicLib("黄色的信用点图标"), Setting: g_settings["ShopRecyclingResources"], Tolerance: 0.3 * PicTolerance },
+        "团队合作宝箱", { Text: FindText().PicLib("团队合作宝箱图标"), Setting: g_settings["ShopRecyclingTeamworkBox"], Tolerance: 0.25 * PicTolerance },
+        "保养工具箱", { Text: FindText().PicLib("保养工具箱图标"), Setting: g_settings["ShopRecyclingKitBox"], Tolerance: 0.3 * PicTolerance },
+        "企业精选武装", { Text: FindText().PicLib("企业精选武装图标"), Setting: g_settings["ShopRecyclingArms"], Tolerance: 0.3 * PicTolerance }
     )
-    ; 遍历并购买所有物品
-    for Name, item in PurchaseItems {
-        if (!item.Setting) {
-            continue ; 如果设置未开启，则跳过此物品
-        }
-        if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.049 * NikkeW . " ", NikkeY + 0.479 * NikkeH . " ", NikkeX + 0.049 * NikkeW + 0.940 * NikkeW . " ", NikkeY + 0.479 * NikkeH + 0.439 * NikkeH . " ", item.Tolerance, item.Tolerance, item.Text, , , , , , 1, TrueRatio, TrueRatio)) {
-            ; 根据找到的同类图标数量进行循环购买
-            loop ok.Length {
-                FindText().Click(ok[A_Index].x, ok[A_Index].y, "L")
-                AddLog("已找到" . Name)
-                Sleep 1000
-                if (okMax := FindText(&X := "wait", &Y := 2, NikkeX + 0.590 * NikkeW . " ", NikkeY + 0.595 * NikkeH . " ", NikkeX + 0.590 * NikkeW + 0.038 * NikkeW . " ", NikkeY + 0.595 * NikkeH + 0.070 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("MAX"), , 0, , , , , TrueRatio, TrueRatio)) {
-                    ; AddLog("点击max")
-                    FindText().Click(X, Y, "L")
-                    Sleep 1000
-                }
-                if (ok1 := FindText(&X := "wait", &Y := 2, NikkeX + 0.506 * NikkeW . " ", NikkeY + 0.786 * NikkeH . " ", NikkeX + 0.506 * NikkeW + 0.088 * NikkeW . " ", NikkeY + 0.786 * NikkeH + 0.146 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("带圈白勾"), , 0, , , , , TrueRatio, TrueRatio)) {
-                    AddLog("购买" . Name)
-                    FindText().Click(X, Y, "L")
-                    Sleep 1000
-                    while !(ok2 := FindText(&X := "wait", &Y := 1, NikkeX + 0.003 * NikkeW . " ", NikkeY + 0.007 * NikkeH . " ", NikkeX + 0.003 * NikkeW + 0.089 * NikkeW . " ", NikkeY + 0.007 * NikkeH + 0.054 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("左上角的百货商店"), , 0, , , , , TrueRatio, TrueRatio)) {
-                        Confirm
-                    }
-                }
-            }
-        } else {
-            AddLog(Name . "未找到，跳过购买")
-        }
-    }
+    ; 调用通用处理函数，开启MAX检查
+    ProcessPurchaseList(PurchaseItems, Map("CheckMax", true))
     if Reopen {
         AddLog("存在限时商品")
         UserMove(384, 1244, TrueRatio)
@@ -6091,10 +6040,10 @@ EventLargeStory() {
         Confirm
         Sleep 500
     }
-    while (ok := FindText(&X := "wait", &Y := 3, NikkeX + 0.369 * NikkeW . " ", NikkeY + 0.701 * NikkeH . " ", NikkeX + 0.369 * NikkeW + 0.054 * NikkeW . " ", NikkeY + 0.701 * NikkeH + 0.036 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("大活动·剩余时间"), , , , , , , TrueRatio, TrueRatio)) {
+    while (ok := FindText(&X := "wait", &Y := 3, NikkeX + 0.496 * NikkeW . " ", NikkeY + 0.607 * NikkeH . " ", NikkeX + 0.496 * NikkeW + 0.063 * NikkeW . " ", NikkeY + 0.607 * NikkeH + 0.032 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("大活动·剩余时间"), , , , , , , TrueRatio, TrueRatio)) {
         AddLog("进入剧情活动页面")
         Sleep 500
-        FindText().Click(X, Y - 100 * TrueRatio, "L")
+        FindText().Click(X, Y + 100 * TrueRatio, "L")
         Sleep 1000
     }
     AdvanceMode("大活动·关卡图标", "大活动·关卡图标2")
