@@ -1187,9 +1187,6 @@ Initialization() {
     if WinExist("ahk_exe " . targetExe) {
         global winID := WinExist("ahk_exe " . targetExe)
         actualWinTitle := WinGetTitle(winID)
-        if WinGetCount("ahk_exe " . targetExe) > 1 {
-            MsgBox("金Doro会员支持多开自动运行")
-        }
         AddLog("找到了进程为 '" . targetExe . "' 的窗口！实际窗口标题是: " . actualWinTitle)
         if actualWinTitle = "胜利女神：新的希望" {
             MsgBox ("不支持国服，自动关闭！")
@@ -1340,6 +1337,10 @@ CheckForUpdate(isManualCheck) {
     libResourcesNeedsReload := false
     ; ==================== AHK 文件更新检查 (脚本本体更新) =====================
     if (scriptExtension = "ahk") {
+        if (g_numeric_settings.Get("DownloadSource") == "Mirror酱") {
+            MsgBox("Mirror酱不支持AHK版本更新", "提示", "IconI")
+            return
+        }
         AddLog("开始检查 DoroHelper.ahk 本体更新……")
         ahkResult := CheckForUpdate_AHK_File(isManualCheck)
         if (ahkResult.Get("success", false)) {
@@ -2295,7 +2296,7 @@ MsgSponsor(*) {
     ; 获取当前用户会员信息
     userGroupInfo := CheckUserGroup()
     ; 表格说明
-    LVZH := guiSponsor.Add("ListView", "xm w400 h120", ["功能", "普通", "铜", "银", "金"])
+    LVZH := guiSponsor.Add("ListView", "xm w400 h120", ["功能", "普通", "铜[废弃]", "银[废弃]", "金"])
     LVZH.ModifyCol(1, 90)
     LVZH.ModifyCol(2, 60)
     LVZH.ModifyCol(3, 60)
@@ -2334,7 +2335,7 @@ MsgSponsor(*) {
     ; === 选择区域 ===
     availableTiers := []
     for tierName, levelInfo in g_MembershipLevels {
-        if (tierName != "普通用户") {
+        if (tierName = "金Doro会员") {
             availableTiers.Push(tierName)
         }
     }
@@ -4561,7 +4562,7 @@ ShopGeneral() {
     Sleep 1000
     ; 定义物品
     PurchaseItems := Map(
-        "免费商品", { Text: FindText().PicLib("红点"), Setting: g_settings["ShopGeneralFree"], Tolerance: 0.2 * PicTolerance },
+        "免费商品", { Text: FindText().PicLib("红点"), Setting: g_settings["ShopGeneralFree"], Tolerance: 0.15 * PicTolerance },
         "芯尘盒", { Text: FindText().PicLib("芯尘盒"), Setting: g_settings["ShopGeneralDust"], Tolerance: 0.2 * PicTolerance },
         "简介个性化礼包", { Text: FindText().PicLib("简介个性化礼包"), Setting: g_settings["ShopGeneralPackage"], Tolerance: 0.2 * PicTolerance }
     )
