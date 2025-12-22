@@ -18,7 +18,7 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.9.7"
+currentVersion := "v1.10.0"
 ; 判断拓展名
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
@@ -165,6 +165,7 @@ global g_numeric_settings := Map(
     "doroGuiX", 200,                    ; DoroHelper窗口X坐标
     "doroGuiY", 200,                    ; DoroHelper窗口Y坐标
     "TestModeValue", "",                ; 调试模式值
+    "BurstModeValue", "|ASASAS|",       ; 爆裂模式值
     "StartupTime", "",                  ; 定时启动时间
     "StartupPath", "",                  ; 启动路径
     "StartDelay", "",                   ; 启动延迟
@@ -784,11 +785,13 @@ TestModeEditControl.Value := g_numeric_settings["TestModeValue"]
 cbTestModeInitialization := AddCheckboxSetting(doroGui, "TestModeInitialization", "预初始化", "x+5  R1")
 doroGui.Tips.SetTip(cbTestModeInitialization, "Initialize before executing tasks")
 BtnTestMode := doroGui.Add("Button", " x+5 yp-3 w25 h25", "▶️").OnEvent("Click", TestMode)
-TextQuickBurst := doroGui.Add("Text", "xp R1 xs+10 +0x0100", "快速爆裂模式")
-doroGui.Tips.SetTip(TextQuickBurst, "启动后，会自动使用爆裂，速度比自带的自动快`n默认先A后S`nAfter starting, Burst will be used automatically, Fater than the built-in auto.`nBy default, A is used before S")
-BtnQuickBurst := doroGui.Add("Button", " x+5 yp-3 w25 h25", "▶️").OnEvent("Click", QuickBurst)
-TextAutoAdvance := doroGui.Add("Text", "xp R1 xs+10 +0x0100", "推图模式beta3[金Doro]")
-doroGui.Tips.SetTip(TextAutoAdvance, "半自动推图。视野调到最大。在地图中靠近怪的地方启动，有时需要手动找怪和找机关`nMap Advancement:Semi-automatic map advancement. Set the view to the maximum. Start near the monster in the map, sometimes you need to manually find monsters and mechanisms")
+TextBurstMode := doroGui.Add("Text", "xp R1 xs+10 +0x0100", "爆裂模式[金Doro]")
+doroGui.Tips.SetTip(TextBurstMode, "启动后，会自动使用爆裂，速度比自带的自动快`nAfter starting, Burst will be used automatically, Fater than the built-in auto.")
+BurstModeEditControl := doroGui.Add("Edit", "x+10 yp w145 h20")
+BurstModeEditControl.Value := g_numeric_settings["BurstModeValue"]
+BtnBurstMode := doroGui.Add("Button", " x+5 yp-3 w25 h25", "▶️").OnEvent("Click", BurstMode)
+TextAutoAdvance := doroGui.Add("Text", "xp R1 xs+10 +0x0100", "推图模式[金Doro]")
+doroGui.Tips.SetTip(TextAutoAdvance, "[beta3]半自动推图。视野调到最大。在地图中靠近怪的地方启动，有时需要手动找怪和找机关`nMap Advancement:Semi-automatic map advancement. Set the view to the maximum. Start near the monster in the map, sometimes you need to manually find monsters and mechanisms")
 BtnAutoAdvance := doroGui.Add("Button", " x+5 yp-3 w25 h25", "▶️").OnEvent("Click", AutoAdvance)
 BtnBluePill := AddCheckboxSetting(doroGui, "BluePill", "蓝色药丸", "xp R1 xs+10 +0x0100")
 doroGui.Tips.SetTip(BtnBluePill, "Blue Pill")
@@ -4301,12 +4304,25 @@ AdvanceMode(Picture, Picture2?) {
 ;tag 通用商店购买处理逻辑
 ProcessPurchaseList(PurchaseItems, Options := Map()) {
     ; Options 参数支持: "CheckCredit" (检查信用点), "CheckMax" (检查MAX按钮)
+    ; 新增支持: "Area" (自定义识图区域，格式为数组 [x1, y1, x2, y2])
+    ; 默认区域
+    sX1 := NikkeX + 0.049 * NikkeW
+    sY1 := NikkeY + 0.479 * NikkeH
+    sX2 := NikkeX + 0.989 * NikkeW
+    sY2 := NikkeY + 0.918 * NikkeH
+    ; 解析 Area 参数 (如果存在且为数组)
+    if Options.Has("Area") and IsObject(Options["Area"]) and Options["Area"].Length >= 4 {
+        sX1 := Options["Area"][1]
+        sY1 := Options["Area"][2]
+        sX2 := Options["Area"][3]
+        sY2 := Options["Area"][4]
+    }
     for Name, item in PurchaseItems {
         if (!item.Setting) {
             continue ; 如果设置未开启，则跳过此物品
         }
-        ; 查找物品
-        if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.049 * NikkeW, NikkeY + 0.479 * NikkeH, NikkeX + 0.049 * NikkeW + 0.940 * NikkeW, NikkeY + 0.479 * NikkeH + 0.439 * NikkeH, item.Tolerance, item.Tolerance, item.Text, , , , , , 1, TrueRatio, TrueRatio)) {
+        ; 查找物品 (使用动态坐标 sX1, sY1, sX2, sY2)
+        if (ok := FindText(&X := "wait", &Y := 1, sX1, sY1, sX2, sY2, item.Tolerance, item.Tolerance, item.Text, , , , , , 1, TrueRatio, TrueRatio)) {
             ; 遍历找到的所有物品 (例如多个手册)
             loop ok.Length {
                 FindText().Click(ok[A_Index].x, ok[A_Index].y, "L")
@@ -4566,9 +4582,14 @@ ShopGeneral() {
         "芯尘盒", { Text: FindText().PicLib("芯尘盒"), Setting: g_settings["ShopGeneralDust"], Tolerance: 0.2 * PicTolerance },
         "简介个性化礼包", { Text: FindText().PicLib("简介个性化礼包"), Setting: g_settings["ShopGeneralPackage"], Tolerance: 0.2 * PicTolerance }
     )
+    ; 定义普通商店的识图区域 (将坐标放入数组中)
+    GeneralShopArea := Map(
+        "CheckCredit", true,
+        "Area", [NikkeX + 0.055 * NikkeW . " ", NikkeY + 0.481 * NikkeH . " ", NikkeX + 0.055 * NikkeW + 0.426 * NikkeW . " ", NikkeY + 0.481 * NikkeH + 0.237 * NikkeH . " "]
+    )
     loop 2 {
-        ; 调用通用处理函数，开启信用点检查
-        ProcessPurchaseList(PurchaseItems, Map("CheckCredit", true))
+        ; 调用通用处理函数，传入区域配置
+        ProcessPurchaseList(PurchaseItems, GeneralShopArea)
         ; 刷新逻辑保持不变
         while (ok := FindText(&X, &Y, NikkeX + 0.173 * NikkeW . " ", NikkeY + 0.423 * NikkeH . " ", NikkeX + 0.173 * NikkeW + 0.034 * NikkeW . " ", NikkeY + 0.423 * NikkeH + 0.050 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("FREE"), , , , , , , TrueRatio, TrueRatio)) {
             AddLog("尝试刷新商店")
@@ -4607,8 +4628,12 @@ ShopArena() {
         "简介个性化礼包", { Text: FindText().PicLib("简介个性化礼包"), Setting: g_settings["ShopArenaPackage"], Tolerance: 0.3 * PicTolerance },
         "公司武器熔炉", { Text: FindText().PicLib("公司武器熔炉"), Setting: g_settings["ShopArenaFurnace"], Tolerance: 0.3 * PicTolerance }
     )
-    ; 调用通用处理函数
-    ProcessPurchaseList(PurchaseItems)
+    ; 定义竞技场商店的识图区域 (将坐标放入数组中)
+    ArenaShopArea := Map(
+        "Area", [NikkeX + 0.054 * NikkeW . " ", NikkeY + 0.481 * NikkeH . " ", NikkeX + 0.054 * NikkeW + 0.511 * NikkeW . " ", NikkeY + 0.481 * NikkeH + 0.238 * NikkeH . " "]
+    )
+    ; 调用通用处理函数，传入区域配置
+    ProcessPurchaseList(PurchaseItems, ArenaShopArea)
 }
 ;tag 废铁商店
 ShopRecycling() {
@@ -4631,8 +4656,13 @@ ShopRecycling() {
         "保养工具箱", { Text: FindText().PicLib("保养工具箱图标"), Setting: g_settings["ShopRecyclingKitBox"], Tolerance: 0.3 * PicTolerance },
         "企业精选武装", { Text: FindText().PicLib("企业精选武装图标"), Setting: g_settings["ShopRecyclingArms"], Tolerance: 0.3 * PicTolerance }
     )
-    ; 调用通用处理函数，开启MAX检查
-    ProcessPurchaseList(PurchaseItems, Map("CheckMax", true))
+    ; 定义废铁商店的识图区域 (将坐标放入数组中)
+    RecyclingShopArea := Map(
+        "CheckMax", true,
+        "Area", [NikkeX + 0.055 * NikkeW . " ", NikkeY + 0.478 * NikkeH . " ", NikkeX + 0.055 * NikkeW + 0.935 * NikkeW . " ", NikkeY + 0.478 * NikkeH + 0.436 * NikkeH . " "]
+    )
+    ; 调用通用处理函数，传入区域配置
+    ProcessPurchaseList(PurchaseItems, RecyclingShopArea)
     if Reopen {
         AddLog("存在限时商品")
         UserMove(384, 1244, TrueRatio)
@@ -6864,21 +6894,110 @@ TestMode(BtnTestMode, Info) {
         MsgBox("执行函数 '" FuncName "' 时出错:`n`n" e.Message "`n`n行号: " e.Line "`n文件: " e.File)
     }
 }
-;tag 快速爆裂
-QuickBurst(*) {
-    Initialization()
-    while true {
-        if (ok := FindText(&X, &Y, NikkeX + 0.920 * NikkeW . " ", NikkeY + 0.458 * NikkeH . " ", NikkeX + 0.920 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.458 * NikkeH + 0.031 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("爆裂·A"), , , , , , , TrueRatio, TrueRatio)) {
-            Send "{a}"
-        }
-        if (ok := FindText(&X, &Y, NikkeX + 0.918 * NikkeW . " ", NikkeY + 0.551 * NikkeH . " ", NikkeX + 0.918 * NikkeW + 0.017 * NikkeW . " ", NikkeY + 0.551 * NikkeH + 0.028 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("爆裂·S"), , , , , , , TrueRatio, TrueRatio)) {
-            Send "{s}"
-        }
-        if !WinActive(nikkeID) {
-            MsgBox "窗口未聚焦，程序已终止"
-            return
+;tag 爆裂模式
+BurstMode(*) {
+    Initialization() ; 调用初始化函数
+    if g_numeric_settings["UserLevel"] < 3 {
+        MsgBox("当前用户组不支持任务(" A_ThisFunc ")，请点击赞助按钮升级会员组")
+        return
+    }
+    ; --- 1. 获取并校验输入 ---
+    g_numeric_settings["BurstModeValue"] := BurstModeEditControl.Value
+    inputStr := BurstModeEditControl.Value
+    ; 无内容即常规模式
+    if (inputStr = "") {
+        while true {
+            if (ok := FindText(&X, &Y, NikkeX + 0.920 * NikkeW . " ", NikkeY + 0.458 * NikkeH . " ", NikkeX + 0.920 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.458 * NikkeH + 0.031 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("爆裂·A"), , , , , , , TrueRatio, TrueRatio)) {
+                Send "{a}"
+            }
+            if (ok := FindText(&X, &Y, NikkeX + 0.918 * NikkeW . " ", NikkeY + 0.551 * NikkeH . " ", NikkeX + 0.918 * NikkeW + 0.017 * NikkeW . " ", NikkeY + 0.551 * NikkeH + 0.028 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("爆裂·S"), , , , , , , TrueRatio, TrueRatio)) {
+                Send "{s}"
+            }
+            if !WinActive(nikkeID) {
+                MsgBox "窗口失去焦点，脚本终止"
+                return
+            }
         }
     }
+    ; 将输入字符串分割为轮次数组 (例如 "AAA|AAS" -> ["AAA", "AAS"])
+    roundKeys := StrSplit(inputStr, "|")
+    ; --- 2. 定义搜索参数配置 (坐标与图库名称) ---
+    ; 存储实际的屏幕绝对坐标 [x1, y1, x2, y2, ImageName]
+    keyConfigs := Map()
+    ; 爆裂·A (左侧) - 这是我们用来触发整个序列的图标
+    keyConfigs["A"] := [NikkeX + 0.917 * NikkeW, NikkeY + 0.456 * NikkeH, NikkeX + 0.917 * NikkeW + 0.020 * NikkeW, NikkeY + 0.456 * NikkeH + 0.034 * NikkeH, "爆裂·A"]
+    ; 爆裂·S (右侧，假设是爆裂 II/III 的备用/替换位置)
+    keyConfigs["S"] := [NikkeX + 0.918 * NikkeW, NikkeY + 0.551 * NikkeH, NikkeX + 0.918 * NikkeW + 0.017 * NikkeW, NikkeY + 0.551 * NikkeH + 0.028 * NikkeH, "爆裂·S"]
+    AddLog("爆裂脚本已启动，当前序列: " inputStr)
+    ; 定义按键之间的延迟
+    BurstKeyDelay := 100   ; 序列内单个按键之间的延迟 (毫秒)
+    ; BurstRoundDelay 变量在此逻辑下不再需要，因为轮次间的延迟由等待爆裂A的时间决定。
+    ; --- 3. 主循环结构 ---
+    ; 外层 Loop：无限循环，不断尝试执行整个爆裂序列
+    loop {
+        ; 遍历每一轮的按键字符串 (例如 "AAA", "AAS")
+        for index, roundStr in roundKeys {
+            ; 检查窗口焦点
+            if !WinActive(nikkeID) {
+                MsgBox "窗口失去焦点，脚本终止"
+                return
+            }
+            ; === 阶段一：等待爆裂·A图标出现 (Wait for Appearance of Burst A) ===
+            ; 在执行每一轮爆裂序列之前，都等待 "爆裂·A" 图标出现
+            burstACfg := keyConfigs["A"]
+            x1_A := burstACfg[1], y1_A := burstACfg[2], x2_A := burstACfg[3], y2_A := burstACfg[4], imgName_A := burstACfg[5]
+            AddLog("等待爆裂·A 图标出现，准备执行第 " index " 轮爆裂序列: " roundStr)
+            appearTimeout := A_TickCount + 15000 ; 设置15秒超时等待 "爆裂·A"
+            foundBurstA := false
+            loop {
+                if !WinActive(nikkeID) {
+                    MsgBox "窗口失去焦点，脚本终止"
+                    return
+                }
+                ; 查找 "爆裂·A" 图标
+                if FindText(&X, &Y, x1_A, y1_A, x2_A, y2_A, 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib(imgName_A), , , , , , , TrueRatio, TrueRatio) {
+                    AddLog("爆裂·A 图标已出现，开始执行第 " index " 轮爆裂序列。")
+                    Sleep 100 ; 确保日志被记录，并稍微等待
+                    foundBurstA := true
+                    break ; "爆裂·A" 出现，跳出等待循环
+                }
+                ; 检查超时
+                if (A_TickCount > appearTimeout) {
+                    AddLog("爆裂·A 等待超时，未检测到图标出现，跳过第 " index " 轮。")
+                    break ; 超时，跳出等待循环
+                }
+                Sleep 50 ; 稍微等待，避免CPU占用过高
+            }
+            ; 如果 "爆裂·A" 未出现（超时），则跳过当前轮次，继续尝试下一轮
+            if (!foundBurstA) {
+                continue ; 跳到 for 循环的下一个 roundStr
+            }
+            ; === 阶段二：爆裂·A出现后，立即执行当前轮次序列，不再进行图标识别 ===
+            keyInRoundIndex := 0 ; 重置当前轮次内的按键序号
+            loop parse, roundStr { ; 将轮次字符串拆解为单个按键字符 (例如 "AAA" -> A, A, A)
+                keyInRoundIndex++ ; 增加按键序号
+                targetKey := StrUpper(Trim(A_LoopField)) ; 获取并规范化单个字符
+                ; 检查按键是否在配置中 (A或S)
+                if !keyConfigs.Has(targetKey) {
+                    AddLog("配置中未定义或无法识别字符: " targetKey "，跳过此按键。")
+                    continue
+                }
+                if !WinActive(nikkeID) {
+                    MsgBox "窗口失去焦点，脚本终止"
+                    return
+                }
+                ; 发送按键 (改为小写)
+                Send "{" StrLower(targetKey) "}"
+                AddLog("发送按键: " targetKey " (序列内第 " keyInRoundIndex " 个)")
+                Sleep BurstKeyDelay ; 序列内单个按键之间的固定延迟
+            } ; 结束对单个字符串 (如 "AAA") 的解析
+            ; 当前轮次执行完毕后，不需要额外的 BurstRoundDelay，
+            ; 因为下一轮将再次从等待爆裂A开始，其等待时间即为间隔。
+        } ; 结束对整个序列 (如 ["AAA", "AAS"]) 的遍历
+        ; 所有爆裂轮次都尝试执行完毕后，重新开始整个序列 (从第一轮开始再次等待爆裂A)
+        AddLog("所有爆裂轮次已尝试一遍，将重新开始序列。")
+        Sleep 1000 ; 整个序列循环之间的短暂延迟
+    } ; 重新开始无限循环，从第一轮开始等待 "爆裂·A"
 }
 ;tag 自动推图
 AutoAdvance(*) {
