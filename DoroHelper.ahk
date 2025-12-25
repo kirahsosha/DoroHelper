@@ -1549,10 +1549,10 @@ CheckForUpdate_AHK_File(isManualCheck) {
                 AddLog("警告: 检测到 AHK 脚本哈希不匹配，但本地文件修改时间 (UTC: " . localLastModifiedUTC . ") 晚于或等于远程 (UTC: " . remoteLastModified . ")。", "Red")
                 if (isManualCheck) {
                     userChoice := MsgBox("检测到 AHK 脚本哈希不匹配，但本地文件修改时间 (UTC) 晚于或等于线上版本。这可能意味着您本地做过更改，或者线上有新更新但时间戳较老`n`n远程哈希 (截短): " . SubStr(remoteSha, 1, 7)
-                    . "`n本地哈希 (截短): " . SubStr(localSha, 1, 7)
-                    . "`n远程修改时间 (UTC): " . remoteLastModified
-                    . "`n本地修改时间 (UTC): " . localLastModifiedUTC
-                    . "`n`n是否强制更新本地脚本为线上版本？(建议在备份后操作)", "AHK强制更新提示", "YesNo")
+                        . "`n本地哈希 (截短): " . SubStr(localSha, 1, 7)
+                        . "`n远程修改时间 (UTC): " . remoteLastModified
+                        . "`n本地修改时间 (UTC): " . localLastModifiedUTC
+                        . "`n`n是否强制更新本地脚本为线上版本？(建议在备份后操作)", "AHK强制更新提示", "YesNo")
                     if (userChoice == "Yes") {
                         AddLog("用户选择强制更新 AHK 脚本。", "Red")
                         shouldDownload := true
@@ -3370,8 +3370,8 @@ ShowSetting(pageName) {
 ;tag 活动结束提醒
 CheckEvent(*) {
     MyFileShortHash := SubStr(A_Now, 1, 8)
-    if MyFileShortHash = "20251217" {
-        MsgBox "单人突击将在今天结束，请没凹的尽快凹分！"
+    if MyFileShortHash = "20251229" {
+        MsgBox "TERMINUS TICKET活动将在今天结束，请尽快完成活动！记得捡垃圾、搬空商店！"
     }
     if MyFileShortHash = "20251126" {
         MsgBox "GODDESS FALL活动将在今天结束，请尽快完成活动！记得捡垃圾、搬空商店！"
@@ -3908,25 +3908,25 @@ BattleSettlement(currentVictory := 0, modes*) {
                 if BattleSkip := 1
                     AddLog("截图功能已启用", "Green")
             }
-            case "RedCircle":
-            {
-                RedCircle := true
-                if BattleSkip := 1
-                    AddLog("红圈功能已启用", "Green")
-            }
-            case "Exit7":
-            {
-                Exit7 := true
-                if BattleSkip := 1
-                    AddLog("满7自动退出功能已启用", "Green")
-            }
-            case "EventStory":
-            {
-                EventStory := true
-                if BattleSkip := 1
-                    AddLog("剧情跳过功能已启用", "Green")
-            }
-            default: MsgBox "格式输入错误，你输入的是" mode
+                case "RedCircle":
+                {
+                    RedCircle := true
+                    if BattleSkip := 1
+                        AddLog("红圈功能已启用", "Green")
+                }
+                    case "Exit7":
+                    {
+                        Exit7 := true
+                        if BattleSkip := 1
+                            AddLog("满7自动退出功能已启用", "Green")
+                    }
+                        case "EventStory":
+                        {
+                            EventStory := true
+                            if BattleSkip := 1
+                                AddLog("剧情跳过功能已启用", "Green")
+                        }
+                            default: MsgBox "格式输入错误，你输入的是" mode
         }
     }
     AddLog("等待战斗结算")
@@ -4429,18 +4429,18 @@ AutoSwitchLanguage() {
                     {
                         language := FindText().PicLib("ENGLISH")
                     }
-                    case 2:
-                    {
-                        language := FindText().PicLib("日本语")
-                    }
-                    case 3:
-                    {
-                        language := FindText().PicLib("(繁体)")
-                    }
-                    case 4:
-                    {
-                        language := FindText().PicLib("(简体)")
-                    }
+                        case 2:
+                        {
+                            language := FindText().PicLib("日本语")
+                        }
+                            case 3:
+                            {
+                                language := FindText().PicLib("(繁体)")
+                            }
+                                case 4:
+                                {
+                                    language := FindText().PicLib("(简体)")
+                                }
                 }
                 if (ok := FindText(&X, &Y, NikkeX + 0.505 * NikkeW . " ", NikkeY + 0.283 * NikkeH . " ", NikkeX + 0.505 * NikkeW + 0.116 * NikkeW . " ", NikkeY + 0.283 * NikkeH + 0.327 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, language, , , , , , , TrueRatio, TrueRatio)) {
                     FindText().Click(X, Y, "L")
@@ -5296,27 +5296,27 @@ InterceptionAnomaly() {
     Sleep 500
     Confirm
     ;if t > 1 {
-        Sleep 2000
-        switch g_numeric_settings["InterceptionBoss"] {
-            case 1:
-                UserClick(1858, 1470, TrueRatio)
-                AddLog("选中队伍1")
-            case 2:
-                UserClick(2014, 1476, TrueRatio)
-                AddLog("选中队伍2")
-            case 3:
-                UserClick(2140, 1482, TrueRatio)
-                AddLog("选中队伍3")
-            case 4:
-                UserClick(2276, 1446, TrueRatio)
-                AddLog("选中队伍4")
-            case 5:
-                UserClick(2414, 1474, TrueRatio)
-                AddLog("选中队伍5")
-            default:
-                MsgBox "BOSS选择错误！"
-                Pause
-        }
+    Sleep 2000
+    switch g_numeric_settings["InterceptionBoss"] {
+        case 1:
+            UserClick(1858, 1470, TrueRatio)
+            AddLog("选中队伍1")
+        case 2:
+            UserClick(2014, 1476, TrueRatio)
+            AddLog("选中队伍2")
+        case 3:
+            UserClick(2140, 1482, TrueRatio)
+            AddLog("选中队伍3")
+        case 4:
+            UserClick(2276, 1446, TrueRatio)
+            AddLog("选中队伍4")
+        case 5:
+            UserClick(2414, 1474, TrueRatio)
+            AddLog("选中队伍5")
+        default:
+            MsgBox "BOSS选择错误！"
+            Pause
+    }
     ;}
     Sleep 1000
     while True {
@@ -5609,15 +5609,17 @@ AwardAdviseAward() {
         AddLog("点击红点")
         FindText().Click(X, Y, "L")
         Sleep 2000
-        while (ok := FindText(&X, &Y, NikkeX + 0.617 * NikkeW . " ", NikkeY + 0.400 * NikkeH . " ", NikkeX + 0.617 * NikkeW + 0.026 * NikkeW . " ", NikkeY + 0.400 * NikkeH + 0.512 * NikkeH . " ", 0.25 * PicTolerance, 0.25 * PicTolerance, FindText().PicLib("红点"), , , , , , 1, TrueRatio, TrueRatio)) {
-            AddLog("播放新的片段")
-            FindText().Click(X, Y, "L")
-            Sleep 3000
-            Send "{]}" ;尝试跳过
-            Sleep 3000
-            Confirm
-            Sleep 1000
-            GoBack
+        while (ok := FindText(&X, &Y, NikkeX + 0.486 * NikkeW . " ", NikkeY + 0.131 * NikkeH . " ", NikkeX + 0.486 * NikkeW + 0.015 * NikkeW . " ", NikkeY + 0.131 * NikkeH + 0.025 * NikkeH . " ", 0.25 * PicTolerance, 0.25 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
+            if (ok := FindText(&X, &Y, NikkeX + 0.617 * NikkeW . " ", NikkeY + 0.400 * NikkeH . " ", NikkeX + 0.617 * NikkeW + 0.026 * NikkeW . " ", NikkeY + 0.400 * NikkeH + 0.512 * NikkeH . " ", 0.25 * PicTolerance, 0.25 * PicTolerance, FindText().PicLib("红点"), , , , , , 1, TrueRatio, TrueRatio)) {
+                AddLog("播放新的片段")
+                FindText().Click(X, Y, "L")
+                Sleep 3000
+                Send "{]}" ;尝试跳过
+                Sleep 3000
+                Confirm
+                Sleep 1000
+                GoBack
+            }
             UserMove(1906, 1026, TrueRatio)
             Send "{WheelDown 3}"
             Sleep 1000
@@ -6290,7 +6292,7 @@ ClearRed() {
 ClearRedRecycling() {
     AddLog("自动升级循环室", "Fuchsia")
     if (ok := FindText(&X, &Y, NikkeX + 0.341 * NikkeW . " ", NikkeY + 0.714 * NikkeH . " ", NikkeX + 0.341 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.714 * NikkeH + 0.031 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio))
-    || (ok := FindText(&X, &Y, NikkeX + 0.341 * NikkeW . " ", NikkeY + 0.714 * NikkeH . " ", NikkeX + 0.341 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.714 * NikkeH + 0.031 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红底的N图标"), , , , , , , TrueRatio, TrueRatio)) {
+        || (ok := FindText(&X, &Y, NikkeX + 0.341 * NikkeW . " ", NikkeY + 0.714 * NikkeH . " ", NikkeX + 0.341 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.714 * NikkeH + 0.031 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红底的N图标"), , , , , , , TrueRatio, TrueRatio)) {
         AddLog("进入前哨基地")
         FindText().Click(X, Y, "L")
         Sleep 1000
@@ -6655,7 +6657,7 @@ ClearRedWallpaper() {
 ClearRedProfile() {
     AddLog("清除个人页红点", "Fuchsia")
     if (FindText(&X := "wait", &Y := 1, NikkeX + 0.028 * NikkeW . " ", NikkeY + 0.000 * NikkeH . " ", NikkeX + 0.028 * NikkeW + 0.020 * NikkeW . " ", NikkeY + 0.000 * NikkeH + 0.032 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红底的N图标"), , , , , , , TrueRatio, TrueRatio))
-    || (FindText(&X := "wait", &Y := 1, NikkeX + 0.028 * NikkeW . " ", NikkeY + 0.000 * NikkeH . " ", NikkeX + 0.028 * NikkeW + 0.020 * NikkeW . " ", NikkeY + 0.000 * NikkeH + 0.032 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
+        || (FindText(&X := "wait", &Y := 1, NikkeX + 0.028 * NikkeW . " ", NikkeY + 0.000 * NikkeH . " ", NikkeX + 0.028 * NikkeW + 0.020 * NikkeW . " ", NikkeY + 0.000 * NikkeH + 0.032 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
         AddLog("点击左上角的个人头像")
         FindText().Click(X, Y, "L")
         Sleep 1000
@@ -6673,7 +6675,7 @@ ClearRedProfile() {
             Sleep 1000
         }
         if (FindText(&X := "wait", &Y := 1, NikkeX + 0.556 * NikkeW . " ", NikkeY + 0.217 * NikkeH . " ", NikkeX + 0.556 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.217 * NikkeH + 0.029 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红底的N图标"), , , , , , , TrueRatio, TrueRatio))
-        || (FindText(&X := "wait", &Y := 1, NikkeX + 0.556 * NikkeW . " ", NikkeY + 0.217 * NikkeH . " ", NikkeX + 0.556 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.217 * NikkeH + 0.029 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
+            || (FindText(&X := "wait", &Y := 1, NikkeX + 0.556 * NikkeW . " ", NikkeY + 0.217 * NikkeH . " ", NikkeX + 0.556 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.217 * NikkeH + 0.029 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
             AddLog("点击称号")
             FindText().Click(X, Y, "L")
             Sleep 1000
@@ -6717,39 +6719,36 @@ ClearRedBla() {
     }
     BackToHall()
 }
-;tag 1提醒
+;tag 提醒
 CheckUnderGround(*) {
     global finalMessageText
-    AddLog("检查地面玩法", "Fuchsia")
-    if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.658 * NikkeW . " ", NikkeY + 0.639 * NikkeH . " ", NikkeX + 0.658 * NikkeW + 0.040 * NikkeW . " ", NikkeY + 0.639 * NikkeH + 0.066 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("方舟的图标"), , 0, , , , , TrueRatio, TrueRatio)) {
-        AddLog("点击作战出击")
-        FindText().Click(X, Y + 200 * TrueRatio, "L")
-        Sleep 1000
-    }
-    if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.397 * NikkeW . " ", NikkeY + 0.594 * NikkeH . " ", NikkeX + 0.397 * NikkeW + 0.037 * NikkeW . " ", NikkeY + 0.594 * NikkeH + 0.042 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("地面玩法·地面"), , , , , , , TrueRatio, TrueRatio)) {
-        AddLog("点击地面玩法")
-        FindText().Click(X, Y, "L")
-        Sleep 1000
-    }
-    if (ok := FindText(&X := "wait", &Y := 10, NikkeX + 0.978 * NikkeW . " ", NikkeY + 0.104 * NikkeH . " ", NikkeX + 0.978 * NikkeW + 0.019 * NikkeW . " ", NikkeY + 0.104 * NikkeH + 0.035 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("地面玩法·任务的图标"), , , , , , , TrueRatio, TrueRatio)) {
-        Sleep 1000
-        AddLog("点击任务")
-        FindText().Click(X, Y, "L")
-        Sleep 3000
-        UserClick(1554, 464, TrueRatio)
-        Sleep 1000
-        Confirm
-        Sleep 1000
-    }
-    if (ok := FindText(&X, &Y, NikkeX + 0.593 * NikkeW . " ", NikkeY + 0.206 * NikkeH . " ", NikkeX + 0.593 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.206 * NikkeH + 0.019 * NikkeH . " ", 0.25 * PicTolerance, 0.25 * PicTolerance, FindText().PicLib("地面玩法·21"), , , , , , , TrueRatio, TrueRatio)) {
-        AddLog("作战报告已达到上限")
-        finalMessageText := finalMessageText . "作战报告已达到上限！`n"
-        Sleep 1000
-    }
-    else AddLog("作战报告未达到上限")
-    Confirm
-    Sleep 1000
-    GoBack
+    AddLog("地面玩法已结束", "Fuchsia")
+    ; AddLog("检查地面玩法", "Fuchsia")
+    ; if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.658 * NikkeW . " ", NikkeY + 0.639 * NikkeH . " ", NikkeX + 0.658 * NikkeW + 0.040 * NikkeW . " ", NikkeY + 0.639 * NikkeH + 0.066 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("方舟的图标"), , 0, , , , , TrueRatio, TrueRatio)) {
+    ;     AddLog("点击作战出击")
+    ;     FindText().Click(X, Y + 200 * TrueRatio, "L")
+    ;     Sleep 1000
+    ; }
+    ; if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.397 * NikkeW . " ", NikkeY + 0.594 * NikkeH . " ", NikkeX + 0.397 * NikkeW + 0.037 * NikkeW . " ", NikkeY + 0.594 * NikkeH + 0.042 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("地面玩法·地面"), , , , , , , TrueRatio, TrueRatio)) {
+    ;     AddLog("点击地面玩法")
+    ;     FindText().Click(X, Y, "L")
+    ;     Sleep 1000
+    ; }
+    ; if (ok := FindText(&X := "wait", &Y := 10, NikkeX + 0.978 * NikkeW . " ", NikkeY + 0.104 * NikkeH . " ", NikkeX + 0.978 * NikkeW + 0.019 * NikkeW . " ", NikkeY + 0.104 * NikkeH + 0.035 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("地面玩法·任务的图标"), , , , , , , TrueRatio, TrueRatio)) {
+    ;     Sleep 1000
+    ;     AddLog("点击任务")
+    ;     FindText().Click(X, Y, "L")
+    ;     Sleep 3000
+    ; }
+    ; if (ok := FindText(&X, &Y, NikkeX + 0.593 * NikkeW . " ", NikkeY + 0.206 * NikkeH . " ", NikkeX + 0.593 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.206 * NikkeH + 0.019 * NikkeH . " ", 0.25 * PicTolerance, 0.25 * PicTolerance, FindText().PicLib("地面玩法·21"), , , , , , , TrueRatio, TrueRatio)) {
+    ;     AddLog("作战报告已达到上限")
+    ;     finalMessageText := finalMessageText . "作战报告已达到上限！`n"
+    ;     Sleep 1000
+    ; }
+    ; else AddLog("作战报告未达到上限")
+    ; Confirm
+    ; Sleep 1000
+    ; GoBack
 }
 ;endregion 任务完成后
 ;region 妙妙工具
