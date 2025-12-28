@@ -3139,6 +3139,7 @@ CheckUserGroup(forceUpdate := false) {
     global VariableUserGroup, g_numeric_settings, g_MembershipLevels
     static cachedUserGroupInfo := false
     static cacheTimestamp := 0 ; 记录缓存更新时间
+    static reminderShown := false ; 新增：记录是否已显示过提醒
     ; 默认返回的普通用户状态
     local defaultUserGroupInfo := Map(
         "MembershipType", "普通用户",
@@ -3164,8 +3165,11 @@ CheckUserGroup(forceUpdate := false) {
             ; 检查缓存中的到期日是否为明天
             local tomorrowDate := SubStr(DateAdd(A_Now, 1, "Days"), 1, 8) ; 获取明天的日期 (YYYYMMDD)
             if (cachedUserGroupInfo["UserLevel"] > 0 && cachedUserGroupInfo["VirtualExpiryDate"] == tomorrowDate) {
-                MsgBox("您的 " . cachedUserGroupInfo["MembershipType"] . " 会员将于明天到期，请及时续费！", "会员续费提醒", "IconI")
-                AddLog("会员续费提醒：您的会员将于明天到期。", "Orange")
+                if (!reminderShown) { ; 修改：增加判断
+                    MsgBox("您的 " . cachedUserGroupInfo["MembershipType"] . " 会员将于明天到期，请及时续费！", "会员续费提醒", "IconI")
+                    AddLog("会员续费提醒：您的会员将于明天到期。", "Orange")
+                    reminderShown := true ; 修改：设置标志
+                }
             }
             return cachedUserGroupInfo
         }
@@ -3237,8 +3241,11 @@ CheckUserGroup(forceUpdate := false) {
         ; 检查会员是否明天到期
         ; local tomorrowDate := SubStr(DateAdd(A_Now, 1, "Days"), 1, 8) ; 获取明天的日期 (YYYYMMDD)
         ; if (highestMembership["VirtualExpiryDate"] == tomorrowDate) {
-        ;     MsgBox("您的 " . highestMembership["MembershipType"] . " 会员将于明天到期，请及时续费！", "会员续费提醒", "IconI")
-        ;     AddLog("会员续费提醒：您的会员将于明天到期。", "Orange")
+        ;     if (!reminderShown) { ; 修改：增加判断
+        ;         MsgBox("您的 " . highestMembership["MembershipType"] . " 会员将于明天到期，请及时续费！", "会员续费提醒", "IconI")
+        ;         AddLog("会员续费提醒：您的会员将于明天到期。", "Orange")
+        ;         reminderShown := true ; 修改：设置标志
+        ;     }
         ; }
     } else {
         AddLog("当前用户组：普通用户 (免费用户)")
