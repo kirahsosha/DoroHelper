@@ -18,7 +18,7 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.11.0"
+currentVersion := "v1.11.1"
 ; 判断拓展名
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
@@ -798,12 +798,12 @@ BtnBurstMode := doroGui.Add("Button", " x+5 yp-3 w25 h25", "▶️").OnEvent("Cl
 TextAutoAdvance := doroGui.Add("Text", "xp R1 xs+10 +0x0100", "推图模式🎁")
 doroGui.Tips.SetTip(TextAutoAdvance, "[beta3]半自动推图。视野调到最大。在地图中靠近怪的地方启动，有时需要手动找怪和找机关`nMap Advancement:Semi-automatic map advancement. Set the view to the maximum. Start near the monster in the map, sometimes you need to manually find monsters and mechanisms")
 BtnAutoAdvance := doroGui.Add("Button", " x+5 yp-3 w25 h25", "▶️").OnEvent("Click", AutoAdvance)
-BtnBluePill := AddCheckboxSetting(doroGui, "BluePill", "蓝色药丸", "xp R1 xs+10 +0x0100")
-doroGui.Tips.SetTip(BtnBluePill, "Blue Pill")
-BtnRedPill := AddCheckboxSetting(doroGui, "RedPill", "红色药丸", "x+10 R1 +0x0100")
-doroGui.Tips.SetTip(BtnRedPill, "Red Pill")
-TextPillinfo := doroGui.Add("Text", "x+10 +0x0100", "←特定情况下勾选")
-doroGui.Tips.SetTip(TextPillinfo, "Check the box in specific circumstances")
+; BtnBluePill := AddCheckboxSetting(doroGui, "BluePill", "蓝色药丸", "xp R1 xs+10 +0x0100")
+; doroGui.Tips.SetTip(BtnBluePill, "Blue Pill")
+; BtnRedPill := AddCheckboxSetting(doroGui, "RedPill", "红色药丸", "x+10 R1 +0x0100")
+; doroGui.Tips.SetTip(BtnRedPill, "Red Pill")
+; TextPillinfo := doroGui.Add("Text", "x+10 +0x0100", "←特定情况下勾选")
+; doroGui.Tips.SetTip(TextPillinfo, "Check the box in specific circumstances")
 ;tag 日志
 doroGui.AddGroupBox("x600 y260 w400 h390 Section", "日志")
 btnCopyLog := doroGui.Add("Button", "xp+320 yp-5 w80 h30", "导出日志")
@@ -2300,16 +2300,13 @@ MsgSponsor(*) {
     ; 获取当前用户会员信息
     userGroupInfo := CheckUserGroup()
     ; 表格说明
-    LVZH := guiSponsor.Add("ListView", "xm w400 h120", ["功能", "普通", "铜[废弃]", "银[废弃]", "金"])
+    LVZH := guiSponsor.Add("ListView", "xm w400 h140", ["功能", "普通", "金Doro"])
     LVZH.ModifyCol(1, 90)
     LVZH.ModifyCol(2, 60)
-    LVZH.ModifyCol(3, 60)
-    LVZH.ModifyCol(4, 60)
-    LVZH.ModifyCol(5, 60)
-    LVZH.Add(, "去广告", "", "✅️", "✅️", "✅️")
-    LVZH.Add(, "轮换活动", "", "", "✅️", "✅️")
-    LVZH.Add(, "定时/路径", "", "", "", "✅️")
-    LVZH.Add(, "自动推图", "", "", "", "✅️")
+    LVZH.Add(, "基础功能", "✅️", "✅️")
+    LVZH.Add(, "去广告", "", "✅️")
+    LVZH.Add(, "轮换活动", "", "✅️")
+    LVZH.Add(, "自动推图", "", "✅️")
     ; 支付二维码逻辑 (保持不变)
     if (scriptExtension = "ahk") {
         picUrl1 := "img\weixin.png"
@@ -2368,6 +2365,11 @@ MsgSponsor(*) {
         }
         ; 如果点击了“按金额”，取消选中“按时长”
         else if (GuiCtrlObj.Hwnd == radAmount.Hwnd) {
+            if g_numeric_settings["UserLevel"] < 3 {
+                MsgBox("非金会员无法使用按金额赞助，请选择按时长赞助方式以修改会员。")
+                radAmount.Value := 0
+                return
+            }
             MsgBox("你实际应该支付的金额应为下方「订单预览」中的金额")
             radDuration.Value := 0
         }
@@ -3541,7 +3543,7 @@ ToggleSetting(settingKey, displayText, guiCtrl, *) {
         memberType := ""
         ; 检查 displayText 是否包含会员等级信息
         if InStr(displayText, "🎁") {
-            requiredLevel := 3
+            requiredLevel := 1 ;会员合并
             memberType := "金Doro会员"
         } else if InStr(displayText, "[银Doro]") {
             requiredLevel := 2
@@ -7075,7 +7077,7 @@ AutoAdvance(*) {
             }
             Confirm
             if (ok := FindText(&X, &Y, NikkeX, NikkeY, NikkeX + NikkeW, NikkeY + NikkeH, 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("推图·红色的圈"), , , , , , , TrueRatio, TrueRatio)) {
-                AddLog("备用方案：找到敌人")
+                AddLog("备用方案：找到红圈")
                 FindText().Click(X, Y, "L")
                 Sleep 500
                 break
@@ -7100,8 +7102,7 @@ AutoAdvance(*) {
         EnterToBattle
         if BattleActive = 1 {
             k := 9
-            modes := ["EventStory"]
-            if BattleSettlement(modes*) = False {
+            if BattleSettlement(0, "EventStory") = False {
                 MsgBox("本日の勝敗結果：`nDoroの敗北")
                 return
             }
