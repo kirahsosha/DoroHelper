@@ -18,7 +18,7 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.12.1"
+currentVersion := "v1.12.2"
 ; 判断拓展名
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
@@ -6504,6 +6504,13 @@ ClearRedLimit() {
                     FindText().Click(X, Y, "L")
                     Sleep 1000
                 }
+                else {
+                    UserClick(3294, 1958, TrueRatio)
+                    Sleep 1000
+                    AddLog("已快捷佩戴装备以清除红点")
+                    GoBack
+                    continue
+                }
                 if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.416 * NikkeW . " ", NikkeY + 0.822 * NikkeH . " ", NikkeX + 0.416 * NikkeW + 0.171 * NikkeW . " ", NikkeY + 0.822 * NikkeH + 0.074 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("妮姬·极限突破"), , , , , , , TrueRatio, TrueRatio)) {
                     AddLog("点击极限突破")
                     FindText().Click(X, Y, "L")
@@ -6756,6 +6763,15 @@ ClearRedBla() {
         FindText().Click(X, Y, "L")
         Sleep 3000
         if g_settings["ClearRedBlaAwards"] {
+            ; 未读对话排序
+            UserClick(2224, 582, TrueRatio)
+            Sleep 500
+            UserClick(1890, 1158, TrueRatio)
+            Sleep 500
+            if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.509 * NikkeW . " ", NikkeY + 0.622 * NikkeH . " ", NikkeX + 0.509 * NikkeW + 0.025 * NikkeW . " ", NikkeY + 0.622 * NikkeH + 0.039 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("带圈白勾"), , , , , , , TrueRatio, TrueRatio)) {
+                FindText().Click(X, Y, "L")
+                Sleep 500
+            }
             while (ok := FindText(&X, &Y, NikkeX + 0.359 * NikkeW . " ", NikkeY + 0.181 * NikkeH . " ", NikkeX + 0.359 * NikkeW + 0.281 * NikkeW . " ", NikkeY + 0.181 * NikkeH + 0.056 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红底的N图标"), , , , , , 5, TrueRatio, TrueRatio)) {
                 FindText().Click(X, Y, "L")
                 Sleep 1000
