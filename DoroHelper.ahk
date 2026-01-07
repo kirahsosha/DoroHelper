@@ -18,7 +18,7 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.12.2"
+currentVersion := "v1.12.3"
 ; 判断拓展名
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
@@ -3858,10 +3858,10 @@ Recruit() {
 }
 ;tag 点掉推销
 RefuseSale() {
-    if (ok := FindText(&X, &Y, NikkeX + 0.438 * NikkeW . " ", NikkeY + 0.853 * NikkeH . " ", NikkeX + 0.438 * NikkeW + 0.124 * NikkeW . " ", NikkeY + 0.853 * NikkeH + 0.048 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("黄色的小时"), , , , , , , TrueRatio, TrueRatio)) {
+    if (ok := FindText(&X, &Y, NikkeX + 0.438 * NikkeW . " ", NikkeY + 0.853 * NikkeH . " ", NikkeX + 0.438 * NikkeW + 0.124 * NikkeW . " ", NikkeY + 0.853 * NikkeH + 0.048 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("黄色的小时"), , , , , , , TrueRatio, TrueRatio)) {
         UserClick(333, 2041, TrueRatio)
         Sleep 500
-        if (ok := FindText(&X, &Y, NikkeX + 0.504 * NikkeW . " ", NikkeY + 0.594 * NikkeH . " ", NikkeX + 0.504 * NikkeW + 0.127 * NikkeW . " ", NikkeY + 0.594 * NikkeH + 0.065 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("带圈白勾"), , 0, , , , , TrueRatio, TrueRatio)) {
+        if (ok := FindText(&X, &Y, NikkeX + 0.504 * NikkeW . " ", NikkeY + 0.594 * NikkeH . " ", NikkeX + 0.504 * NikkeW + 0.127 * NikkeW . " ", NikkeY + 0.594 * NikkeH + 0.065 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("带圈白勾"), , 0, , , , , TrueRatio, TrueRatio)) {
             FindText().Click(X, Y, "L")
             Sleep 500
         }
@@ -5853,8 +5853,7 @@ OneAwardPass() {
     GoBack()
 }
 ;endregion 通行证收取
-;region 招募
-;tag 每日免费招募
+;region 每日免费招募
 AwardFreeRecruit() {
     AddLog("开始任务：每日免费招募", "Fuchsia")
     if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.585 * NikkeW . " ", NikkeY + 0.922 * NikkeH . " ", NikkeX + 0.585 * NikkeW + 0.051 * NikkeW . " ", NikkeY + 0.922 * NikkeH + 0.036 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("白色的每天免费"), , , , , , , TrueRatio, TrueRatio)) {
@@ -5877,9 +5876,12 @@ AwardFreeRecruit() {
             }
         }
     }
+    else {
+        AddLog("没有免费每日招募", "MAROON")
+    }
     BackToHall
 }
-;endregion 招募
+;endregion 每日免费招募
 ;region 协同作战
 ;tag 协同作战入口
 AwardCooperate() {
@@ -6066,7 +6068,7 @@ EventSmall() {
 ;tag 挑战
 EventSmallChallenge() {
     AddLog("开始任务：小活动·挑战", "Fuchsia")
-    while (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.430 * NikkeW . " ", NikkeY + 0.723 * NikkeH . " ", NikkeX + 0.430 * NikkeW + 0.024 * NikkeW . " ", NikkeY + 0.723 * NikkeH + 0.026 * NikkeH . " ", 0.35 * PicTolerance, 0.35 * PicTolerance, FindText().PicLib("小活动·挑战"), , , , , , , TrueRatio, TrueRatio)) {
+    while (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.419 * NikkeW . " ", NikkeY + 0.723 * NikkeH . " ", NikkeX + 0.419 * NikkeW + 0.029 * NikkeW . " ", NikkeY + 0.723 * NikkeH + 0.030 * NikkeH . " ", 0.35 * PicTolerance, 0.35 * PicTolerance, FindText().PicLib("小活动·挑战"), , , , , , , TrueRatio, TrueRatio)) {
         AddLog("尝试进入对应活动页")
         FindText().Click(X, Y, "L")
         Sleep 500
