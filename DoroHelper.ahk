@@ -280,25 +280,33 @@ doroGui.MarginY := Round(doroGui.MarginY * 1)
 doroGui.SetFont('s12', 'Microsoft YaHei UI')
 ;tag 框
 Update := doroGui.AddGroupBox("x10 y10 w250 h210 ", "更新")
-;tag 检查更新
-BtnUpdate := doroGui.Add("Button", "xp+50 yp-1 w80 h25", "检查更新")
-doroGui.Tips.SetTip(BtnUpdate, "Check for updates")
-BtnUpdate.OnEvent("Click", ClickOnCheckForUpdate)
 ;tag 赞助
-; BtnSponsor := doroGui.Add("Button", "x+10  w50 h25", "赞助")
+; BtnSponsor := doroGui.Add("Button", "x70 yp-1 w50 h25", "赞助")
 ; doroGui.Tips.SetTip(BtnSponsor, "Sponsor")
 ; BtnSponsor.OnEvent("Click", MsgSponsor)
 ;tag 帮助
-BtnHelp := doroGui.Add("Button", "x+10 w50 h25", "帮助")
+BtnHelp := doroGui.Add("Button", "x130 yp w50 h25", "帮助")
 doroGui.Tips.SetTip(BtnHelp, "Help")
 BtnHelp.OnEvent("Click", ClickOnHelp)
+;tag 广告
+BtnAdvertisement := doroGui.Add("Button", "x190 yp w50 h25", "广告")
+doroGui.Tips.SetTip(BtnAdvertisement, "Advertisement")
+BtnAdvertisement.OnEvent("Click", Advertisement)
 ;tag 版本
 TextVersion := doroGui.Add("Text", "x20 y40 R1 +0x0100", "版本：" currentVersion)
 doroGui.Tips.SetTip(TextVersion, "Version")
+;tag 检查更新
+BtnUpdate := doroGui.Add("Button", "x190 yp-1 w50 h25", "检查")
+doroGui.Tips.SetTip(BtnUpdate, "Check for updates")
+BtnUpdate.OnEvent("Click", ClickOnCheckForUpdate)
 ;tag 用户组
 TextUserGroup := doroGui.Add("Text", "x20 y+5 R1 +0x0100 Section", "用户组：")
 doroGui.Tips.SetTip(TextUserGroup, "你可以通点击上方的赞助按钮来获得更高级的用户组`nUserGroup:You can upgrade your membership by clicking the Sponsor button above`n普通用户:Normal User|铜:Copper|银:Silver|金:Gold")
 VariableUserGroup := doroGui.Add("Text", "x+0.5 w100 R1 +0x0100", g_numeric_settings["UserGroup"])
+;tag 检查用户组
+BtnCheckUserGroup := doroGui.Add("Button", "x190 yp-1 w50 h25", "检查")
+doroGui.Tips.SetTip(BtnCheckUserGroup, "Check for UserGroup")
+BtnCheckUserGroup.OnEvent("Click", (Ctrl, Info) => CheckUserGroup(true))
 ;tag 更新渠道
 TextUpdateChannels := doroGui.Add("Text", "Section x20 y+8 R1 +0x0100", "更新渠道")
 doroGui.Tips.SetTip(TextUpdateChannels, "UpdateChannels`n正式版:稳定，适合大多数用户|Stable: Reliable, recommended for most users.`n测试版|Beta")
@@ -3394,8 +3402,8 @@ ShowSetting(pageName) {
 ;tag 活动结束提醒
 CheckEvent(*) {
     MyFileShortHash := SubStr(A_Now, 1, 8)
-    if MyFileShortHash = "20251229" {
-        MsgBox "TERMINUS TICKET活动将在今天结束，请尽快完成活动！记得捡垃圾、搬空商店！"
+    if MyFileShortHash = "20260114" {
+        MsgBox "单人突击将在今天结束！"
     }
     if MyFileShortHash = "20251126" {
         MsgBox "GODDESS FALL活动将在今天结束，请尽快完成活动！记得捡垃圾、搬空商店！"
@@ -3429,7 +3437,7 @@ ClickOnHelp(*) {
     MyHelp.Show()
 }
 ;tag 广告
-Advertisement() {
+Advertisement(*) {
     ; adTitle := "AD"
     ; MyAd := Gui(, adTitle)
     ; MyAd.SetFont('s10', 'Microsoft YaHei UI')
@@ -4263,7 +4271,7 @@ AdvanceMode(Picture, Picture2?) {
         Confirm
     }
     AddLog("进入活动关卡")
-    sleep 500
+    sleep 1000
     AddLog("进行活动推关")
     Failed := false
     while true {
@@ -4276,7 +4284,7 @@ AdvanceMode(Picture, Picture2?) {
         Failed := false
         ; 1. 尝试匹配 Picture (高优先级)
         ; 只有在 Picture 上一轮没有失败时，才进行识别
-        if (!skipped && (ok_Pic := FindText(&X := "wait", &Y := 1, NikkeX + 0.305 * NikkeW . " ", NikkeY + 0.230 * NikkeH . " ", NikkeX + 0.305 * NikkeW + 0.388 * NikkeW . " ", NikkeY + 0.230 * NikkeH + 0.691 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib(Picture), , , , , , 4, TrueRatio, TrueRatio))) {
+        if (!skipped && (ok_Pic := FindText(&X := "wait", &Y := 1, NikkeX + 0.370 * NikkeW . " ", NikkeY + 0.326 * NikkeH . " ", NikkeX + 0.370 * NikkeW + 0.261 * NikkeW . " ", NikkeY + 0.326 * NikkeH + 0.471 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib(Picture), , , , , , 4, TrueRatio, TrueRatio))) {
             ok := ok_Pic
             currentPic := Picture
             hasAutoFill := true
@@ -6984,7 +6992,7 @@ TestMode(BtnTestMode, Info) {
         Result := fn.Call(ParamsArray*)
         ; 根据 Result 是否为空来决定消息，但通常函数执行完毕即可
         if (Result != "") {
-            MsgBox("函数 '" FuncName "' 执行完毕。结果: " Result)
+            MsgBox("函数 '" FuncName "' 执行完毕。")
         } else {
             MsgBox("函数 '" FuncName "' 执行完毕。")
         }
