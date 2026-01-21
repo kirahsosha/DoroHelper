@@ -1001,79 +1001,83 @@ ClickOnDoro(*) {
     }
     if g_settings["Event"] {
         if g_settings["EventSmall"] {
-            EventSmall()
-            if g_settings["EventSmallChallenge"] {
-                EventSmallChallenge()
+            if EventSmall() {
+                if g_settings["EventSmallChallenge"] {
+                    EventSmallChallenge()
+                }
+                if g_settings["EventSmallStory"] {
+                    EventSmallStory()
+                }
+                if g_settings["EventSmallMission"] {
+                    EventSmallMission()
+                }
+                BackToHall
             }
-            if g_settings["EventSmallStory"] {
-                EventSmallStory()
-            }
-            if g_settings["EventSmallMission"] {
-                EventSmallMission()
-            }
-            BackToHall
         }
         if g_settings["EventSmallExtra"] {
-            EventSmallExtra()
-            if g_settings["EventSmallExtraChallenge"] {
-                EventSmallExtraChallenge()
+            if EventSmallExtra() {
+                if g_settings["EventSmallExtraChallenge"] {
+                    EventSmallExtraChallenge()
+                }
+                if g_settings["EventSmallExtraStory"] {
+                    EventSmallExtraStory()
+                }
+                if g_settings["EventSmallExtraMission"] {
+                    EventSmallExtraMission()
+                }
+                BackToHall
             }
-            if g_settings["EventSmallExtraStory"] {
-                EventSmallExtraStory()
-            }
-            if g_settings["EventSmallExtraMission"] {
-                EventSmallExtraMission()
-            }
-            BackToHall
         }
         if g_settings["EventLarge"] {
-            EventLarge()
-            if g_settings["EventLargeSign"] {
-                EventLargeSign()
-            }
-            if g_settings["EventLargeChallenge"] {
-                EventLargeChallenge()
-            }
-            if g_settings["EventLargeStory"] {
-                EventLargeStory()
-            }
-            if g_settings["EventLargeCooperate"] {
-                EventLargeCooperate()
-            }
-            if g_settings["EventLargeMinigame"] {
-                EventLargeMinigame()
-            }
-            if g_settings["EventLargeDaily"] {
-                EventLargeDaily()
-            }
-            BackToHall
-            if g_settings["AwardPass"] {
-                AwardPass()
+            if EventLarge() {
+                if g_settings["EventLargeSign"] {
+                    EventLargeSign()
+                }
+                if g_settings["EventLargeChallenge"] {
+                    EventLargeChallenge()
+                }
+                if g_settings["EventLargeStory"] {
+                    EventLargeStory()
+                }
+                if g_settings["EventLargeCooperate"] {
+                    EventLargeCooperate()
+                }
+                if g_settings["EventLargeMinigame"] {
+                    EventLargeMinigame()
+                }
+                if g_settings["EventLargeDaily"] {
+                    EventLargeDaily()
+                }
+                BackToHall
+                if g_settings["AwardPass"] {
+                    AwardPass()
+                }
             }
         }
         if g_settings["EventLargeExtra"] {
-            EventLargeExtra()
-            if g_settings["EventLargeExtraSign"] {
-                EventLargeExtraSign()
-            }
-            if g_settings["EventLargeExtraChallenge"] {
-                EventLargeExtraChallenge()
-            }
-            if g_settings["EventLargeExtraStory"] {
-                EventLargeExtraStory()
-            }
-            if g_settings["EventLargeExtraCooperate"] {
-                EventLargeExtraCooperate()
-            }
-            if g_settings["EventLargeExtraMinigame"] {
-                EventLargeExtraMinigame()
-            }
-            if g_settings["EventLargeExtraDaily"] {
-                EventLargeExtraDaily()
-            }
-            BackToHall
-            if g_settings["AwardPass"] {
-                AwardPass()
+            if EventLargeExtra() {
+                if g_settings["EventLargeExtraSign"] {
+                    EventLargeExtraSign()
+                }
+                if g_settings["EventLargeExtraChallenge"] {
+                    EventLargeExtraChallenge()
+                }
+                if g_settings["EventLargeExtraStory"] {
+                    EventLargeExtraStory()
+                }
+                if g_settings["EventLargeExtraCooperate"] {
+                    EventLargeExtraCooperate()
+                }
+                if g_settings["EventLargeExtraMinigame"] {
+                    EventLargeExtraMinigame()
+                }
+                if g_settings["EventLargeExtraDaily"] {
+                    EventLargeExtraDaily()
+                }
+                BackToHall
+                if g_settings["AwardPass"] {
+                    AwardPass()
+                }
             }
         }
     }
@@ -6106,7 +6110,7 @@ EventSmall() {
         }
         if A_Index > 3 {
             AddLog("未找到活动，可能是活动已结束")
-            return
+            return False
         }
     }
     while !(ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.003 * NikkeW . " ", NikkeY + 0.007 * NikkeH . " ", NikkeX + 0.003 * NikkeW + 0.089 * NikkeW . " ", NikkeY + 0.007 * NikkeH + 0.054 * NikkeH . " ", 0.35 * PicTolerance, 0.35 * PicTolerance, FindText().PicLib("剧情活动"), , 0, , , , , TrueRatio, TrueRatio)) {
@@ -6117,6 +6121,7 @@ EventSmall() {
     loop 6 {
         Confirm
     }
+    return True
 }
 ;tag 挑战
 EventSmallChallenge() {
@@ -6186,7 +6191,7 @@ EventLarge() {
         }
         if A_Index > 3 {
             AddLog("未找到活动，可能是活动已结束")
-            return
+            return False
         }
     }
     while !(ok := FindText(&X := "wait", &Y := 2, NikkeX + 0.003 * NikkeW . " ", NikkeY + 0.007 * NikkeH . " ", NikkeX + 0.003 * NikkeW + 0.089 * NikkeW . " ", NikkeY + 0.007 * NikkeH + 0.054 * NikkeH . " ", 0.29 * PicTolerance, 0.29 * PicTolerance, FindText().PicLib("活动地区的地区"), , 0, , , , , TrueRatio, TrueRatio)) {
@@ -6197,6 +6202,7 @@ EventLarge() {
     loop 6 {
         Confirm
     }
+    return True
 }
 ;tag 签到
 EventLargeSign() {
@@ -6401,7 +6407,7 @@ EventSmallExtra() {
         }
         if A_Index > 3 {
             AddLog("未找到活动，可能是活动已结束")
-            return
+            return False
         }
     }
     while !(ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.003 * NikkeW . " ", NikkeY + 0.007 * NikkeH . " ", NikkeX + 0.003 * NikkeW + 0.089 * NikkeW . " ", NikkeY + 0.007 * NikkeH + 0.054 * NikkeH . " ", 0.35 * PicTolerance, 0.35 * PicTolerance, FindText().PicLib("剧情活动"), , 0, , , , , TrueRatio, TrueRatio)) {
@@ -6412,6 +6418,7 @@ EventSmallExtra() {
     loop 6 {
         Confirm
     }
+    return True
 }
 ;tag 挑战
 EventSmallExtraChallenge() {
