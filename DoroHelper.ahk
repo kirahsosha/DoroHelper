@@ -18,7 +18,7 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.12.7"
+currentVersion := "v1.12.8"
 ; 判断拓展名
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
@@ -418,7 +418,7 @@ cbCloseAdvertisement := AddCheckboxSetting(doroGui, "CloseAdvertisement", "移�
 doroGui.Tips.SetTip(cbCloseAdvertisement, "Remove ads[Copper Doro]")
 g_settingPages["Settings"].Push(cbCloseAdvertisement)
 cbAutoSwitchLanguage := AddCheckboxSetting(doroGui, "AutoSwitchLanguage", "自动切换语言", "R1")
-doroGui.Tips.SetTip(cbAutoSwitchLanguage, "Switch language automatically")
+doroGui.Tips.SetTip(cbAutoSwitchLanguage, "填入你原本使用的语言，简体中文建议不勾选`nFill in the language you originally used. (For simplified Chinese, please do not select this option.)")
 g_settingPages["Settings"].Push(cbAutoSwitchLanguage)
 DropDownListLanguage := doroGui.Add("DropDownList", "w150 Choose" g_numeric_settings["LanguageList"], ["ENGLISH", "日本语", "中文 (繁体)", "中文 (简体)"])
 doroGui.Tips.SetTip(DropDownListLanguage, "请以你选择的语言运行游戏。程序会最终切换回你选择的语言`nPlease run the game in the language of your choice. The program will eventually switch back to the language you have chosen")
@@ -3050,7 +3050,6 @@ GetDiskSerialsForValidation() {
 ;tag 获取并解析用户组数据
 ; 成功返回 Map 对象，失败抛出 Error
 FetchAndParseGroupData() {
-    AddLog("正在从网络获取用户组数据……", "Blue")
     giteeUrl := "https://gitee.com/con_sul/DoroHelper/raw/main/group/GroupArrayV4.json"
     githubUrl := "https://raw.githubusercontent.com/1204244136/DoroHelper/refs/heads/main/group/GroupArrayV4.json"
     ;jsonContent := ""
@@ -3059,43 +3058,42 @@ FetchAndParseGroupData() {
     groupData := Json.Load(&jsonContent)
     return groupData
     ; giteeAttemptError := ""
-    ; ; --- 尝试从 Gitee 获取数据 ---
-    ; AddLog("尝试从 Gitee 获取用户组数据……", "Blue")
+    ; --- 1. 优先尝试从 Gitee 获取数据 ---
     ; try {
+    ;     AddLog("正在尝试从 Gitee 获取用户组数据（国内源优先）……", "Blue")
     ;     jsonContent := DownloadUrlContent(giteeUrl)
-    ;     if (jsonContent = "") {
-    ;         ; Gitee返回空内容，视为失败
-    ;         throw Error("Gitee返回空内容", -1, "Gitee网络或文件访问失败")
+    ;     if (jsonContent != "") {
+    ;         ; 尝试解析 JSON，如果 Gitee 返回的不是有效 JSON（例如维护页面），这里会报错并触发 catch，从而切换到 GitHub
+    ;         groupData := Json.Load(&jsonContent)
+    ;         if IsObject(groupData) {
+    ;             AddLog("成功从 Gitee 获取并解析用户组数据。", "Green")
+    ;             return groupData
+    ;         }
     ;     }
-    ;     groupData := Json.Load(&jsonContent)
-    ;     if !IsObject(groupData) {
-    ;         throw Error("Gitee JSON格式不正确", -1, "Gitee JSON文件解析失败")
-    ;     }
-    ;     AddLog("成功从 Gitee 获取并解析用户组数据。", "Green")
-    ;     return groupData
-    ; } catch as e_gitee {
-    ;     giteeAttemptError := "Gitee失败: " . e_gitee.Message
-    ;     AddLog("从 Gitee 获取或解析用户组数据失败: " . giteeAttemptError . "。尝试从 GitHub 获取。", "Red")
+    ;     ; 如果内容为空或非对象，手动抛出错误以触发 Catch 进入 GitHub 逻辑
+    ;     throw Error("Gitee 返回数据为空或格式无效")
     ; }
-    ; ; --- 尝试从 GitHub 获取数据 (如果 Gitee 失败) ---
-    ; AddLog("尝试从 GitHub 获取用户组数据……", "Blue")
+    ; catch as e {
+    ;     AddLog("Gitee 连接或解析失败 (" . e.Message . ")，准备切换至 GitHub。", "Maroon")
+    ; }
+    ; ; --- 2. Gitee 失败后，尝试从 GitHub 获取数据 ---
     ; try {
+    ;     AddLog("正在尝试从 GitHub 获取用户组数据……", "Blue")
     ;     jsonContent := DownloadUrlContent(githubUrl)
-    ;     if (jsonContent = "") {
-    ;         ; GitHub返回空内容，视为失败
-    ;         throw Error("GitHub返回空内容", -1, "GitHub网络或文件访问失败")
+    ;     if (jsonContent == "") {
+    ;         throw Error("GitHub 返回内容为空")
     ;     }
     ;     groupData := Json.Load(&jsonContent)
     ;     if !IsObject(groupData) {
-    ;         throw Error("GitHub JSON格式不正确", -1, "GitHub JSON文件解析失败")
+    ;         throw Error("GitHub JSON 格式解析失败")
     ;     }
     ;     AddLog("成功从 GitHub 获取并解析用户组数据。", "Green")
     ;     return groupData
-    ; } catch as e_github {
-    ;     githubAttemptError := "GitHub失败: " . e_github.Message
-    ;     AddLog("从 GitHub 获取或解析用户组数据失败: " . githubAttemptError . "。", "Red")
-    ;     ; --- 如果 GitHub 也失败，抛出最终错误 ---
-    ;     throw Error("无法获取用户组信息", -1, "网络或Gitee/GitHub访问失败: " . giteeAttemptError . " | " . githubAttemptError)
+    ; }
+    ; catch as e {
+    ;     ; --- 3. 全部失败 ---
+    ;     AddLog("获取用户组数据失败: Gitee 和 GitHub 均无法访问或解析。错误: " . e.Message, "Red")
+    ;     throw Error("无法获取用户组信息", -1, e.Message)
     ; }
 }
 ;tag 根据哈希值从用户组数据中获取会员信息
