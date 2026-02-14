@@ -18,7 +18,7 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.12.9"
+currentVersion := "v1.12.10"
 ; 判断拓展名
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
@@ -5885,6 +5885,10 @@ AwardDaily() {
 AwardPass() {
     AddLog("开始任务：通行证", "Fuchsia")
     t := 0
+    if (ok := FindText(&X, &Y, NikkeX + 0.968 * NikkeW . " ", NikkeY + 0.121 * NikkeH . " ", NikkeX + 0.968 * NikkeW + 0.030 * NikkeW . " ", NikkeY + 0.121 * NikkeH + 0.048 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("节日特殊活动的图标"), , , , , , , TrueRatio, TrueRatio)) {
+        AddLog("检测到节日特殊活动，跳过通行证任务", "MAROON")
+        return
+    }
     while true {
         if (ok := FindText(&X, &Y, NikkeX + 0.879 * NikkeW . " ", NikkeY + 0.150 * NikkeH . " ", NikkeX + 0.879 * NikkeW + 0.019 * NikkeW . " ", NikkeY + 0.150 * NikkeH + 0.037 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("通行证·3+"), , , , , , , TrueRatio, TrueRatio)) {
             AddLog("3+通行证模式")
@@ -5927,7 +5931,7 @@ AwardPass() {
             break
         }
         ; 任务数量异常退出
-        if t > 3 {
+        if A_Index > 3 {
             AddLog("通行证任务已执行超过3次，可能出现异常，结束通行证任务", "MAROON")
             break
         }
@@ -6348,7 +6352,7 @@ EventLargeCooperate() {
             break
         }
     }
-    if (ok := FindText(&X, &Y, NikkeX + 0.357 * NikkeW . " ", NikkeY + 0.575 * NikkeH . " ", NikkeX + 0.357 * NikkeW + 0.287 * NikkeW . " ", NikkeY + 0.575 * NikkeH + 0.019 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
+    if (ok := FindText(&X, &Y, NikkeX + 0.355 * NikkeW . " ", NikkeY + 0.521 * NikkeH . " ", NikkeX + 0.355 * NikkeW + 0.300 * NikkeW . " ", NikkeY + 0.521 * NikkeH + 0.383 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("协同作战·捍卫者"), , , , , , 1, TrueRatio, TrueRatio)) {
         FindText().Click(X, Y, "L")
         Sleep 1000
     }
@@ -6419,6 +6423,7 @@ EventLargeDaily() {
         FindText().Click(X, Y, "L")
         Sleep 1000
         loop 3 {
+            AddLog("领取奖励")
             UserClick(2412, 1905, TrueRatio)
             Sleep 1000
         }
@@ -6431,7 +6436,6 @@ EventLargeDaily() {
     }
     else AddLog("奖励已领取")
 }
-;tag 通行证
 ;endregion 大活动
 ;region 小活动·额外
 ;tag 入口
