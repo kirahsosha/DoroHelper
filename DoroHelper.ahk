@@ -18,7 +18,7 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.12.10"
+currentVersion := "v1.12.11"
 ; 判断拓展名
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
@@ -5852,8 +5852,10 @@ AwardRanking() {
     if (ok := FindText(&X := "wait", &Y := 3, NikkeX + 0.909 * NikkeW . " ", NikkeY + 0.915 * NikkeH . " ", NikkeX + 0.909 * NikkeW + 0.084 * NikkeW . " ", NikkeY + 0.915 * NikkeH + 0.056 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("获得奖励的图标"), , , , , , , TrueRatio * 0.8, TrueRatio * 0.8)) {
         Sleep 1000
         AddLog("点击全部领取")
-        FindText().Click(X, Y - 30 * TrueRatio, "L")
-        Sleep 1000
+        loop 3 {
+            FindText().Click(X, Y - 20 * TrueRatio, "L")
+            Sleep 500
+        }
     }
     BackToHall
 }
@@ -5881,30 +5883,35 @@ AwardDaily() {
 }
 ;endregion 每日任务收取
 ;region 通行证收取
-;tag 查找通行证
+;tag 通行证任务主逻辑
 AwardPass() {
     AddLog("开始任务：通行证", "Fuchsia")
     t := 0
-    if (ok := FindText(&X, &Y, NikkeX + 0.968 * NikkeW . " ", NikkeY + 0.121 * NikkeH . " ", NikkeX + 0.968 * NikkeW + 0.030 * NikkeW . " ", NikkeY + 0.121 * NikkeH + 0.048 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("节日特殊活动的图标"), , , , , , , TrueRatio, TrueRatio)) {
-        AddLog("检测到节日特殊活动，跳过通行证任务", "MAROON")
-        return
+    Y_Offset := 0  ; 默认偏移量为 0
+    ; 1. 检测节日特殊活动图标
+    ; 如果检测到图标，说明 UI 发生了整体下移
+    if (ok := FindText(&X, &Y, NikkeX + 0.968 * NikkeW, NikkeY + 0.121 * NikkeH, NikkeX + 0.968 * NikkeW + 0.030 * NikkeW, NikkeY + 0.121 * NikkeH + 0.048 * NikkeH, 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("节日特殊活动的图标"), , , , , , , TrueRatio, TrueRatio)) {
+        AddLog("检测到节日特殊活动，启用坐标偏移模式", "MAROON")
+        Y_Offset := 0.043  ; 根据预估值推算的纵坐标偏移比例
     }
     while true {
-        if (ok := FindText(&X, &Y, NikkeX + 0.879 * NikkeW . " ", NikkeY + 0.150 * NikkeH . " ", NikkeX + 0.879 * NikkeW + 0.019 * NikkeW . " ", NikkeY + 0.150 * NikkeH + 0.037 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("通行证·3+"), , , , , , , TrueRatio, TrueRatio)) {
+        ; --- 通行证 3+ 模式检测 ---
+        if (ok := FindText(&X, &Y, NikkeX + 0.879 * NikkeW, NikkeY + (0.150 + Y_Offset) * NikkeH, NikkeX + 0.879 * NikkeW + 0.019 * NikkeW, NikkeY + (0.150 + Y_Offset) * NikkeH + 0.037 * NikkeH, 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("通行证·3+"), , , , , , , TrueRatio, TrueRatio)) {
             AddLog("3+通行证模式")
             FindText().Click(X, Y, "L")
             Sleep 1000
-            ; 检查红点并执行通行证
-            if (ok := FindText(&X := "wait", &Y := 2, NikkeX + 0.985 * NikkeW . " ", NikkeY + 0.124 * NikkeH . " ", NikkeX + 0.985 * NikkeW + 0.015 * NikkeW . " ", NikkeY + 0.124 * NikkeH + 0.261 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
+            ; 检查内部垂直排布的红点
+            if (ok := FindText(&X := "wait", &Y := 2, NikkeX + 0.985 * NikkeW, NikkeY + (0.124 + Y_Offset) * NikkeH, NikkeX + 0.985 * NikkeW + 0.015 * NikkeW, NikkeY + (0.124 + Y_Offset) * NikkeH + 0.261 * NikkeH, 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
                 FindText().Click(X - 50 * TrueRatio, Y + 50 * TrueRatio, "L")
-                t := t + 1
+                t += 1
                 AddLog("执行第" t "个通行证")
-                OneAwardPass()
+                OneAwardPass
                 BackToHall()
                 continue
             }
         }
-        else if (ok := FindText(&X, &Y, NikkeX + 0.878 * NikkeW . " ", NikkeY + 0.151 * NikkeH . " ", NikkeX + 0.878 * NikkeW + 0.021 * NikkeW . " ", NikkeY + 0.151 * NikkeH + 0.036 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("通行证·2"), , , , , , , TrueRatio, TrueRatio)) {
+        ; --- 通行证 2 模式检测 ---
+        else if (ok := FindText(&X, &Y, NikkeX + 0.878 * NikkeW, NikkeY + (0.151 + Y_Offset) * NikkeH, NikkeX + 0.878 * NikkeW + 0.021 * NikkeW, NikkeY + (0.151 + Y_Offset) * NikkeH + 0.036 * NikkeH, 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("通行证·2"), , , , , , , TrueRatio, TrueRatio)) {
             AddLog("2通行证模式")
             FindText().Click(X, Y, "L")
             Sleep 1000
@@ -5912,27 +5919,25 @@ AwardPass() {
         else {
             AddLog("1通行证模式")
         }
-        ; 检查红点并执行通行证
-        if (ok := FindText(&X := "wait", &Y := 2, NikkeX + 0.983 * NikkeW . " ", NikkeY + 0.131 * NikkeH . " ", NikkeX + 0.983 * NikkeW + 0.017 * NikkeW . " ", NikkeY + 0.131 * NikkeH + 0.029 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
+        ; --- 检查主界面通行证入口红点 ---
+        if (ok := FindText(&X := "wait", &Y := 2, NikkeX + 0.983 * NikkeW, NikkeY + (0.131 + Y_Offset) * NikkeH, NikkeX + 0.983 * NikkeW + 0.017 * NikkeW, NikkeY + (0.131 + Y_Offset) * NikkeH + 0.029 * NikkeH, 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
             FindText().Click(X - 50 * TrueRatio, Y + 50 * TrueRatio, "L")
-            t := t + 1
+            t += 1
             AddLog("执行第" t "个通行证")
-            OneAwardPass()
+            OneAwardPass
             BackToHall()
             continue
         }
-        ; 检测是否有其他未完成的通行证
-        if (ok := FindText(&X, &Y, NikkeX + 0.890 * NikkeW . " ", NikkeY + 0.149 * NikkeH . " ", NikkeX + 0.890 * NikkeW + 0.010 * NikkeW . " ", NikkeY + 0.149 * NikkeH + 0.016 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio * 0.8, TrueRatio * 0.8)) {
+        ; --- 检测是否有其他未完成的通行证图标红点 ---
+        if (ok := FindText(&X, &Y, NikkeX + 0.890 * NikkeW, NikkeY + (0.149 + Y_Offset) * NikkeH, NikkeX + 0.890 * NikkeW + 0.010 * NikkeW, NikkeY + (0.149 + Y_Offset) * NikkeH + 0.016 * NikkeH, 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio * 0.8, TrueRatio * 0.8)) {
             FindText().Click(X, Y, "L")
         }
         else {
             AddLog("通行证已全部收取")
-            Confirm
             break
         }
-        ; 任务数量异常退出
         if A_Index > 3 {
-            AddLog("通行证任务已执行超过3次，可能出现异常，结束通行证任务", "MAROON")
+            AddLog("通行证任务已执行超过3次，异常跳出", "MAROON")
             break
         }
     }
@@ -6279,7 +6284,7 @@ EventLargeSign() {
         Confirm
     }
     else {
-        AddLog("没有可领取的签到奖励," "MAROON")
+        AddLog("没有可领取的签到奖励", "MAROON")
     }
     while !(ok := FindText(&X := "wait", &Y := 2, NikkeX + 0.003 * NikkeW . " ", NikkeY + 0.007 * NikkeH . " ", NikkeX + 0.003 * NikkeW + 0.089 * NikkeW . " ", NikkeY + 0.007 * NikkeH + 0.054 * NikkeH . " ", 0.29 * PicTolerance, 0.29 * PicTolerance, FindText().PicLib("活动地区的地区"), , 0, , , , , TrueRatio, TrueRatio)) {
         AddLog("尝试返回活动主页面")
@@ -6905,7 +6910,7 @@ ClearRedWallpaper() {
                 AddLog("点击立绘/活动/技能动画/珍藏品")
                 FindText().Click(X, Y, "L")
                 Sleep 1000
-                if (ok := FindText(&X, &Y, NikkeX + 0.605 * NikkeW . " ", NikkeY + 0.422 * NikkeH . " ", NikkeX + 0.605 * NikkeW + 0.019 * NikkeW . " ", NikkeY + 0.422 * NikkeH + 0.031 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红底的N图标"), , , , , , , TrueRatio, TrueRatio)) {
+                if (ok := FindText(&X, &Y, NikkeX + 0.605 * NikkeW . " ", NikkeY + 0.422 * NikkeH . " ", NikkeX + 0.605 * NikkeW + 0.019 * NikkeW . " ", NikkeY + 0.422 * NikkeH + 0.031 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红底的N图标"), , , , , , , TrueRatio, TrueRatio)) {
                     AddLog("点击背景")
                     FindText().Click(X, Y, "L")
                     Sleep 500
