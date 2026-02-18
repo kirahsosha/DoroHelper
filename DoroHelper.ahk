@@ -3623,7 +3623,9 @@ CheckAccountLimit(currentWinID) {
     if !DirExist(hiddenDir)
         DirCreate(hiddenDir)
     cacheFile := hiddenDir "\session_v2.dat"
-    todayDate := FormatTime(, "yyyyMMdd")
+    ; 获取当前时间，并减去 4 小时
+    adjustedTime := DateAdd(A_Now, -4, "Hours")
+    todayDate := FormatTime(adjustedTime, "yyyyMMdd")
     ; 读取缓存中的日期
     savedDate := IniRead(cacheFile, "System", "LastRunDate", "0")
     ; 如果日期变更，重置记录
@@ -5919,6 +5921,10 @@ AwardPass() {
         else {
             AddLog("1通行证模式")
         }
+        if t > 3 {
+            AddLog("通行证任务异常跳出", "MAROON")
+            break
+        }
         ; --- 检查主界面通行证入口红点 ---
         if (ok := FindText(&X := "wait", &Y := 2, NikkeX + 0.983 * NikkeW, NikkeY + (0.131 + Y_Offset) * NikkeH, NikkeX + 0.983 * NikkeW + 0.017 * NikkeW, NikkeY + (0.131 + Y_Offset) * NikkeH + 0.029 * NikkeH, 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
             FindText().Click(X - 50 * TrueRatio, Y + 50 * TrueRatio, "L")
@@ -5934,10 +5940,6 @@ AwardPass() {
         }
         else {
             AddLog("通行证已全部收取")
-            break
-        }
-        if A_Index > 3 {
-            AddLog("通行证任务已执行超过3次，异常跳出", "MAROON")
             break
         }
     }
