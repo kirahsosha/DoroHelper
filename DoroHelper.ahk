@@ -18,19 +18,10 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.12.14"
+currentVersion := "v1.12.15"
 ; 判断拓展名
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
-; 检查是否为 AHK 脚本
-if (scriptExtension = "ahk") {
-    if RegExMatch(currentVersion, "\.(\d+)$", &match) {
-        patchNumber := match.1
-        newPatchNumber := patchNumber + 1
-        currentVersion := RegExReplace(currentVersion, "\.(\d+)$", "." . newPatchNumber)
-    }
-    currentVersion := currentVersion . "-beta"
-}
 usr := "kirahsosha"
 repo := "DoroHelper"
 ;endregion 设置常量
@@ -263,13 +254,23 @@ SetWorkingDir A_ScriptDir
 ;tag 变量名修改提示
 try {
     LoadSettings()
-    if InStr(currentVersion, "v1.7.7") and g_numeric_settings["Version"] != currentVersion {
+    if InStr(currentVersion, "v1.12.15") and g_numeric_settings["Version"] != currentVersion {
         MsgBox("该版本部分选项被重置了，请按需勾选")
+        g_settings["CloseHelp"] := 0
         g_numeric_settings["Version"] := currentVersion
     }
 }
 catch {
     WriteSettings()
+}
+; 检查是否为 AHK 脚本
+if (scriptExtension = "ahk") {
+    if RegExMatch(currentVersion, "\.(\d+)$", &match) {
+        patchNumber := match.1
+        newPatchNumber := patchNumber + 1
+        currentVersion := RegExReplace(currentVersion, "\.(\d+)$", "." . newPatchNumber)
+    }
+    currentVersion := currentVersion . "-beta"
 }
 ;endregion 读取设置
 ;region 创建GUI
@@ -3530,7 +3531,7 @@ ShowCtrlPlusTutorial(checkboxCtrl) {
     ; 阻止通过关闭按钮关闭窗口
     TutorialGui.OnEvent("Close", (GuiObj) => 0)
     TutorialGui.SetFont('s11', 'Microsoft YaHei UI')
-    TutorialGui.Add("Text", "w400 h120", "您准备启用「不再显示帮助」选项前，必须学会使用快捷键来关闭程序，这是使用本程序的基本操作`n`n现在请尝试使用本软件自带的快捷键关闭dorohelper`n`n不知道就罚你重看，使用其他的方法关闭可能导致程序异常！")
+    TutorialGui.Add("Text", "w400 h120", "您准备启用「不再显示帮助」选项前，必须学会使用快捷键来关闭程序，这是使用本程序的基本操作`n`n现在请尝试使用本软件自带的快捷键关闭dorohelper`n`n不知道就罚你重看，使用其他的方法会导致软件异常！")
     TutorialGui.Add("Button", "w140 h40", "唏，可以和解吗？").OnEvent("Click", (GuiCtrlObj, Info) => ReturnToHelp(TutorialGui, checkboxCtrl))
     TutorialGui.Show()
 }
@@ -4503,11 +4504,12 @@ AdvanceMode(Picture, Picture2?) {
                     Send "{]}"
                     Sleep 500
                 }
-                ; 区域变化的提示
-                if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.445 * NikkeW . " ", NikkeY + 0.561 * NikkeH . " ", NikkeX + 0.445 * NikkeW + 0.111 * NikkeW . " ", NikkeY + 0.561 * NikkeH + 0.056 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("前往区域的图标"), , , , , , , TrueRatio, TrueRatio)) {
-                    FindText().Click(X, Y + 400 * TrueRatio, "L")
-                    Sleep 500
-                }
+            }
+            ; 区域变化的提示
+            if (ok := FindText(&X := "wait", &Y := 1, NikkeX + 0.445 * NikkeW . " ", NikkeY + 0.561 * NikkeH . " ", NikkeX + 0.445 * NikkeW + 0.111 * NikkeW . " ", NikkeY + 0.561 * NikkeH + 0.056 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("前往区域的图标"), , , , , , , TrueRatio, TrueRatio)) {
+                FindText().Click(X, Y + 400 * TrueRatio, "L")
+                AddLog("区域有变化")
+                Sleep 500
             }
             ; 非扫荡关卡未能打满（即第11、12关）
             if (LastVictoryCount != 5 && BattleActive = 1 && QuickBattle != 1) {
@@ -6009,6 +6011,7 @@ AwardPass() {
         }
         if t > 3 {
             AddLog("通行证任务异常跳出", "MAROON")
+            Confirm
             break
         }
         ; --- 检查主界面通行证入口红点 ---
