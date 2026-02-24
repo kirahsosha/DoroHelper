@@ -18,7 +18,7 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.12.15"
+currentVersion := "v1.13.0"
 ; 判断拓展名
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
@@ -812,12 +812,9 @@ BtnBurstMode := doroGui.Add("Button", " x+5 yp-3 w25 h25", "▶️").OnEvent("Cl
 TextAutoAdvance := doroGui.Add("Text", "xp R1 xs+10 +0x0100", "推图模式🎁")
 doroGui.Tips.SetTip(TextAutoAdvance, "[beta3]半自动推图。视野调到最大。在地图中靠近怪的地方启动，有时需要手动找怪和找机关`nMap Advancement:Semi-automatic map advancement. Set the view to the maximum. Start near the monster in the map, sometimes you need to manually find monsters and mechanisms")
 BtnAutoAdvance := doroGui.Add("Button", " x+5 yp-3 w25 h25", "▶️").OnEvent("Click", AutoAdvance)
-; BtnBluePill := AddCheckboxSetting(doroGui, "BluePill", "蓝色药丸", "xp R1 xs+10 +0x0100")
-; doroGui.Tips.SetTip(BtnBluePill, "Blue Pill")
-; BtnRedPill := AddCheckboxSetting(doroGui, "RedPill", "红色药丸", "x+10 R1 +0x0100")
-; doroGui.Tips.SetTip(BtnRedPill, "Red Pill")
-; TextPillinfo := doroGui.Add("Text", "x+10 +0x0100", "←特定情况下勾选")
-; doroGui.Tips.SetTip(TextPillinfo, "Check the box in specific circumstances")
+TextMiniGame := doroGui.Add("Text", "xp R1 xs+10 +0x0100", "小游戏刷印章🎁")
+doroGui.Tips.SetTip(TextMiniGame, "选中NORMAL-2，点右边的运行，脚本会自动帮你按enter")
+BtnMiniGame := doroGui.Add("Button", " x+5 yp-3 w25 h25", "▶️").OnEvent("Click", EventLargeMinigameX)
 ;tag 日志
 doroGui.AddGroupBox("x600 y260 w400 h390 Section", "日志")
 btnCopyLog := doroGui.Add("Button", "xp+320 yp-5 w80 h30", "导出日志")
@@ -6514,6 +6511,36 @@ EventLargeMinigame() {
         Sleep 1000
     }
     AddLog("已返回活动主页面")
+}
+EventLargeMinigameX(*) {
+    Initialization()
+    if g_numeric_settings["UserLevel"] < 3 {
+        MsgBox("当前用户组不支持任务(" A_ThisFunc ")，请点击赞助按钮升级会员组")
+        return
+    }
+    AddLog("开始小游戏刷印章，如有需暂停请手动停止")
+    FindText().PicLib("|<小游戏·红圈>FF5E5C-0.90$70.00000Ts000000000zzz00000000zzzzU000000Dzzzzk000003zzzzzk00000TzzzzzU00007zzzzzzU0000zzzzzzz00007zzzzzzz0001zzzzzzzy000Dzzzzzzzw001zzzzzzzzs00Dzzzzzzzzk00zzzzzzzzz007zzzzzzzzy00zzzzzzzzzw03zzzzzzzzzk0TzzzzzzzzzU3zzzzzzzzzz0Dzzzzzzzzzw1zzzzzzzzzzs7zzzz03zzzzUzzzzk03zzzz3zzzw003zzzwDzzzU007zzzlzzzw000Dzzz7zzzU000TzzyTzzw0000zzztzzzk0003zzzbzzy00007zzyzzzs0000TzzvzzzU0001zzzzzzw00003zzzzzzk0000Dzzzzzz00000zzzzzzw00003zzzzzzk0000Dzzzzzz00000zzzzzzy00007zzzzzzs0000TzzzzzzU0001zzzbzzz0000DzzyTzzw0000zzztzzzs0007zzzbzzzk000zzzyTzzz0003zzzkzzzz000zzzz3zzzy007zzzw7zzzy01zzzzUTzzzz0Tzzzy0zzzzzzzzzzk3zzzzzzzzzz07zzzzzzzzzs0TzzzzzzzzzU0zzzzzzzzzw01zzzzzzzzzU07zzzzzzzzy00Dzzzzzzzzk00Tzzzzzzzy000zzzzzzzzk001zzzzzzzy0003zzzzzzzk0007zzzzzzy0000Dzzzzzzk0000Dzzzzzw00000TzzzzzU00000Tzzzzs000000Tzzzy0000000Dzzz000000007zz00002", 1)
+    loop {
+        UserClick(3290, 1952, TrueRatio)
+        Sleep 5000
+        t := 0
+        loop {
+            if (ok := FindText(&X, &Y, NikkeX + 0.618 * NikkeW . " ", NikkeY + 0.783 * NikkeH . " ", NikkeX + 0.618 * NikkeW + 0.064 * NikkeW . " ", NikkeY + 0.783 * NikkeH + 0.131 * NikkeH . " ", 0.5 * PicTolerance, 0.5 * PicTolerance, FindText().PicLib("小游戏·红圈"), , , , , , 0, TrueRatio, TrueRatio)) {
+                t := t + 1
+                Click "down left"
+                Sleep 50
+                Click "up left"
+                Sleep 50
+            }
+            if t > 68 {
+                break
+            }
+        }
+        loop 5 {
+            Confirm
+            Sleep 1000
+        }
+    }
 }
 ;tag 领取奖励
 EventLargeDaily() {
