@@ -7523,6 +7523,7 @@ AutoAdvance(*) {
 }
 ;tag 暂停程序
 ^2:: {
+    AddLog("程序已中止", "Fuchsia")
     Pause
 }
 ;tag 初始化并调整窗口大小
