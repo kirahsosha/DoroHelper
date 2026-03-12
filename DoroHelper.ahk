@@ -18,7 +18,7 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.13.2"
+currentVersion := "v1.13.3"
 ; 判断拓展名
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
@@ -693,7 +693,7 @@ g_settingPages["Event"].Push(SetEventSmallMission)
 ; SetEventSmallExtraMission := AddCheckboxSetting(doroGui, "EventSmallExtraMission", "小活动任务", "R1 xs+15")
 ; doroGui.Tips.SetTip(SetEventSmallExtraMission, "Small Events Mission")
 ; g_settingPages["Event"].Push(SetEventSmallExtraMission)
-SetEventLarge := AddCheckboxSetting(doroGui, "EventLarge", "大活动🎁[Lie cause Recoil]", "R1 xs")
+SetEventLarge := AddCheckboxSetting(doroGui, "EventLarge", "大活动🎁", "R1 xs")
 doroGui.Tips.SetTip(SetEventLarge, "Large Events")
 g_settingPages["Event"].Push(SetEventLarge)
 SetEventLargeSign := AddCheckboxSetting(doroGui, "EventLargeSign", "大活动签到", "R1 xs+15")
