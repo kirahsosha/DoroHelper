@@ -18,7 +18,7 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.13.6"
+currentVersion := "v1.14.0"
 ; 判断拓展名
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
@@ -142,6 +142,7 @@ global g_settings := Map(
     "CloseHelp", 0,                     ; 关闭帮助提示
     "AutoSwitchLanguage", 0,            ; 自动切换语言
     "AutoCheckUpdate", 1,               ; 自动检查更新
+    "SkipUserGroupCheckForFreeUser", 0, ; 非会员用户跳过用户组检查
     "AutoDeleteOldFile", 0,             ; 自动删除旧版本
     "DoroClosing", 0,                   ; 完成后自动关闭Doro
     "LoopMode", 0,                      ; 完成后自动关闭游戏
@@ -177,6 +178,8 @@ global g_numeric_settings := Map(
     "Version", currentVersion,          ; 版本号
     "UpdateChannels", "正式版",         ; 更新渠道
     "DownloadSource", "GitHub",         ; 下载源
+    "GroupDataSource", "Gitee",         ; 用户组数据源 (Gitee/GitHub/RawGit)
+    "PreferredHttpRequest", "WinHttp.WinHttpRequest.5.1", ; HTTP 请求优先级
     "UserGroup", "普通用户",             ; 用户组
     "UserLevel", 0                      ; 用户级别
 )
@@ -353,7 +356,7 @@ doroGui.Tips.SetTip(BtnUncheckAll, "取消勾选全部|Uncheck All")
 BtnUncheckAll.OnEvent("Click", UncheckAllTasks)
 ;tag 任务总开关
 doroGui.SetFont('s14')
-TextSettings := doroGui.Add("Text", "x20 yp+40 Section +0x0100", "　基础设置")
+TextSettings := doroGui.Add("Text", "x20 yp+40 Section +0x0100", "　设置")
 doroGui.Tips.SetTip(TextSettings, "Basic Settings")
 BtnSetting := doroGui.Add("Button", "x210 yp-2 w30 h30", "🔧").OnEvent("Click", (Ctrl, Info) => ShowSetting("Settings"))
 cbLogin := AddCheckboxSetting(doroGui, "Login", "登录", "xs", true)
@@ -413,7 +416,7 @@ Btn1080.OnEvent("Click", (Ctrl, Info) => AdjustSize(1920, 1080))
 doroGui.Tips.SetTip(Btn1080, "Click to set to 1080p")
 g_settingPages["Default"].Push(Btn1080)
 ;tag 二级设置Settings
-SetNormalTitle := doroGui.Add("Text", "x290 y40 R1 +0x0100 Section", "====基础设置====")
+SetNormalTitle := doroGui.Add("Text", "x290 y40 R1 +0x0100 Section", "====常规设置====")
 g_settingPages["Settings"].Push(SetNormalTitle)
 cbCloseAdvertisement := AddCheckboxSetting(doroGui, "CloseAdvertisement", "移除广告提示🎁", "R1")
 doroGui.Tips.SetTip(cbCloseAdvertisement, "Remove ads[Copper Doro]")
@@ -421,11 +424,11 @@ g_settingPages["Settings"].Push(cbCloseAdvertisement)
 cbAutoSwitchLanguage := AddCheckboxSetting(doroGui, "AutoSwitchLanguage", "自动切换语言", "R1")
 doroGui.Tips.SetTip(cbAutoSwitchLanguage, "填入你原本使用的语言，简体中文建议不勾选`nFill in the language you originally used. (For simplified Chinese, please do not select this option.)")
 g_settingPages["Settings"].Push(cbAutoSwitchLanguage)
-DropDownListLanguage := doroGui.Add("DropDownList", "w150 Choose" g_numeric_settings["LanguageList"], ["ENGLISH", "日本语", "中文 (繁体)", "中文 (简体)"])
+DropDownListLanguage := doroGui.Add("DropDownList", "x+20 w120 Choose" g_numeric_settings["LanguageList"], ["ENGLISH", "日本语", "中文 (繁体)", "中文 (简体)"])
 doroGui.Tips.SetTip(DropDownListLanguage, "请以你选择的语言运行游戏。程序会最终切换回你选择的语言`nPlease run the game in the language of your choice. The program will eventually switch back to the language you have chosen")
 DropDownListLanguage.OnEvent("Change", (Ctrl, Info) => g_numeric_settings["LanguageList"] := Ctrl.Value)
 g_settingPages["Settings"].Push(DropDownListLanguage)
-cbAutoCheckVersion := AddCheckboxSetting(doroGui, "AutoCheckUpdate", "自动检查更新", "R1")
+cbAutoCheckVersion := AddCheckboxSetting(doroGui, "AutoCheckUpdate", "自动检查更新", " xs R1")
 doroGui.Tips.SetTip(cbAutoCheckVersion, "Check for updates automatically at startup")
 g_settingPages["Settings"].Push(cbAutoCheckVersion)
 cbAutoDeleteOldFile := AddCheckboxSetting(doroGui, "AutoDeleteOldFile", "自动删除旧版本", "R1")
@@ -434,6 +437,26 @@ g_settingPages["Settings"].Push(cbAutoDeleteOldFile)
 CheckAutoText := AddCheckboxSetting(doroGui, "CheckAuto", "自动开启自动射击和爆裂", "R1")
 doroGui.Tips.SetTip(CheckAutoText, "Enable Auto Shoot and Burst automatically")
 g_settingPages["Settings"].Push(CheckAutoText)
+;tag 用户组设置
+SetUserGroupTitle := doroGui.Add("Text", "R1 +0x0100", "====用户组设置====")
+g_settingPages["Settings"].Push(SetUserGroupTitle)
+cbSkipGroupCheck := AddCheckboxSetting(doroGui, "SkipUserGroupCheckForFreeUser", "非会员跳过用户组检查", "R1")
+doroGui.Tips.SetTip(cbSkipGroupCheck, "勾选后，非会员用户启动时将跳过用户组检查以节省时间`nSkip user group check for free users to save startup time")
+g_settingPages["Settings"].Push(cbSkipGroupCheck)
+TextGroupDataSource := doroGui.Add("Text", "R1 +0x0100", "用户组数据源")
+doroGui.Tips.SetTip(TextGroupDataSource, "用户组数据源镜像`nGitee:国内源(推荐)|GitHub:官方源|RawGit:CDN加速`nUser Group Data Source Mirror`nGitee: Domestic (Recommended) | GitHub: Official | RawGit: CDN Accelerated")
+g_settingPages["Settings"].Push(TextGroupDataSource)
+cbGroupDataSource := doroGui.AddDropDownList("x+20 w100", ["Gitee", "GitHub", "RawGit"])
+cbGroupDataSource.Text := g_numeric_settings["GroupDataSource"]
+cbGroupDataSource.OnEvent("Change", (Ctrl, Info) => g_numeric_settings["GroupDataSource"] := Ctrl.Text)
+g_settingPages["Settings"].Push(cbGroupDataSource)
+TextPreferredHttp := doroGui.Add("Text", "xs R1 +0x0100", "HTTP请求方式")
+doroGui.Tips.SetTip(TextPreferredHttp, "选择优先使用的HTTP请求组件`nWinHttp.WinHttpRequest.5.1: 兼容性更好`nMSXML2.ServerXMLHTTP: 更轻量`nPreferred HTTP request component")
+g_settingPages["Settings"].Push(TextPreferredHttp)
+cbPreferredHttp := doroGui.AddDropDownList("x+20 w100", ["WinHttp.WinHttpRequest.5.1", "MSXML2.ServerXMLHTTP"])
+cbPreferredHttp.Text := g_numeric_settings["PreferredHttpRequest"]
+cbPreferredHttp.OnEvent("Change", (Ctrl, Info) => g_numeric_settings["PreferredHttpRequest"] := Ctrl.Text)
+g_settingPages["Settings"].Push(cbPreferredHttp)
 ;tag 二级登录Login
 SetLogin := doroGui.Add("Text", "x290 y40 R1 +0x0100 Section", "====登录====")
 g_settingPages["Login"].Push(SetLogin)
@@ -812,9 +835,6 @@ BtnBurstMode := doroGui.Add("Button", " x+5 yp-3 w25 h25", "▶️").OnEvent("Cl
 TextAutoAdvance := doroGui.Add("Text", "xp R1 xs+10 +0x0100", "推图模式🎁")
 doroGui.Tips.SetTip(TextAutoAdvance, "[beta3]半自动推图。视野调到最大。在地图中靠近怪的地方启动，有时需要手动找怪和找机关`nMap Advancement:Semi-automatic map advancement. Set the view to the maximum. Start near the monster in the map, sometimes you need to manually find monsters and mechanisms")
 BtnAutoAdvance := doroGui.Add("Button", " x+5 yp-3 w25 h25", "▶️").OnEvent("Click", AutoAdvance)
-TextMiniGame := doroGui.Add("Text", "xp R1 xs+10 +0x0100", "小游戏刷印章🎁")
-doroGui.Tips.SetTip(TextMiniGame, "选中NORMAL-2，点右边的运行，脚本会自动帮你按enter")
-BtnMiniGame := doroGui.Add("Button", " x+5 yp-3 w25 h25", "▶️").OnEvent("Click", EventLargeMinigameX)
 ;tag 日志
 doroGui.AddGroupBox("x600 y260 w400 h390 Section", "日志")
 btnCopyLog := doroGui.Add("Button", "xp+320 yp-5 w80 h30", "导出日志")
@@ -862,8 +882,13 @@ if !(LocaleName = "zh-CN") {
     AddLog("For our international users,this will be a much faster and better way to get support. Here's the invite link:https://discord.gg/f4rAWJVNJj")
 }
 ;tag 检查用户组
-if A_UserName != "12042"
-    CheckUserGroup
+if A_UserName != "12042" {
+    if (g_settings["SkipUserGroupCheckForFreeUser"]) {
+        AddLog("已跳过用户组检查（非会员跳过已启用）", "Blue")
+    } else {
+        CheckUserGroup
+    }
+}
 ;tag 广告
 ; 如果满足以下任一条件，则显示广告：
 ; 1. 未勾选关闭广告 (无论用户是谁)
@@ -1654,10 +1679,10 @@ CheckForUpdate_AHK_File(isManualCheck) {
                 AddLog("警告: 检测到 AHK 脚本哈希不匹配，但本地文件修改时间 (UTC: " . localLastModifiedUTC . ") 晚于或等于远程 (UTC: " . remoteLastModified . ")。", "Red")
                 if (isManualCheck) {
                     userChoice := MsgBox("检测到 AHK 脚本哈希不匹配，但本地文件修改时间 (UTC) 晚于或等于线上版本。这可能意味着您本地做过更改，或者线上有新更新但时间戳较老`n`n远程哈希 (截短): " . SubStr(remoteSha, 1, 7)
-                    . "`n本地哈希 (截短): " . SubStr(localSha, 1, 7)
-                    . "`n远程修改时间 (UTC): " . remoteLastModified
-                    . "`n本地修改时间 (UTC): " . localLastModifiedUTC
-                    . "`n`n是否强制更新本地脚本为线上版本？(建议在备份后操作)", "AHK强制更新提示", "YesNo")
+                        . "`n本地哈希 (截短): " . SubStr(localSha, 1, 7)
+                        . "`n远程修改时间 (UTC): " . remoteLastModified
+                        . "`n本地修改时间 (UTC): " . localLastModifiedUTC
+                        . "`n`n是否强制更新本地脚本为线上版本？(建议在备份后操作)", "AHK强制更新提示", "YesNo")
                     if (userChoice == "Yes") {
                         AddLog("用户选择强制更新 AHK 脚本。", "Red")
                         shouldDownload := true
@@ -2820,102 +2845,83 @@ CalculateSponsorInfo(thisGuiButton, info) {
 DownloadUrlContent(url) {
     ; 这个函数是获取纯文本内容，而不是下载文件到磁盘。
     ; 请注意与 Download 命令的区别。
-    ; ----------------- 1. 尝试使用 WinHttp.WinHttpRequest.5.1 (首选) -----------------
+    ; 根据用户设置决定 HTTP 请求组件的优先顺序
+    global g_numeric_settings
+    preferredHttp := g_numeric_settings.Has("PreferredHttpRequest") ? g_numeric_settings["PreferredHttpRequest"] : "WinHttp.WinHttpRequest.5.1"
+    if (preferredHttp = "MSXML2.ServerXMLHTTP") {
+        primaryName := "MSXML2.ServerXMLHTTP"
+        fallbackName := "WinHttp.WinHttpRequest.5.1"
+    } else {
+        primaryName := "WinHttp.WinHttpRequest.5.1"
+        fallbackName := "MSXML2.ServerXMLHTTP"
+    }
+    ; ----------------- 1. 尝试使用首选方案 -----------------
     try {
-        whr := ComObject("WinHttp.WinHttpRequest.5.1")
-        whr.Open("GET", url, true)
-        whr.Send()
-        whr.WaitForResponse(10) ; 10 秒超时
-        if (whr.Status != 200) {
-            ; 遇到非200状态码，抛出异常，触发下面的MSXML2备用方案
-            throw Error("HTTP状态码非200 (WinHttp)", -1, "状态码: " . whr.Status)
-        }
-        ; ----------------- WinHttp 内容解码逻辑 -----------------
-        responseBody := whr.ResponseBody
-        if (IsObject(responseBody) && ComObjType(responseBody) & 0x2000) { ; SafeArray (VT_ARRAY)
-            dataPtr := 0, lBound := 0, uBound := 0
-            DllCall("OleAut32\SafeArrayGetLBound", "Ptr", ComObjValue(responseBody), "UInt", 1, "Int64*", &lBound)
-            DllCall("OleAut32\SafeArrayGetUBound", "Ptr", ComObjValue(responseBody), "UInt", 1, "Int64*", &uBound)
-            actualSize := uBound - lBound + 1
-            if (actualSize > 0) {
-                DllCall("OleAut32\SafeArrayAccessData", "Ptr", ComObjValue(responseBody), "Ptr*", &dataPtr)
-                content := StrGet(dataPtr, actualSize, "UTF-8")
-                DllCall("OleAut32\SafeArrayUnaccessData", "Ptr", ComObjValue(responseBody))
-                return content
-            } else {
-                AddLog("下载 URL 内容警告: SafeArray 大小为0或无效，URL: " . url, "MAROON")
-                return ""
-            }
-        } else if IsObject(responseBody) { ; Other COM object, try ADODB.Stream
-            Stream := ComObject("ADODB.Stream")
-            Stream.Type := 1 ; adTypeBinary
-            Stream.Open()
-            Stream.Write(responseBody)
-            Stream.Position := 0
-            Stream.Type := 2 ; adTypeText
-            Stream.Charset := "utf-8"
-            content := Stream.ReadText()
-            Stream.Close()
-            return content
-        } else { ; Not a COM object, fallback to ResponseText (may have encoding issues)
-            AddLog("下载 URL 内容警告: ResponseBody 不是预期类型，回退到 ResponseText，URL: " . url, "MAROON")
-            return whr.ResponseText
-        }
+        return _DownloadWithMethod(primaryName, url)
     } catch as e1 {
-        AddLog("使用 WinHttp.WinHttpRequest.5.1 失败，尝试备用方案。错误: " . e1.Message . " URL: " . url, "RED")
-        ; ----------------- 2. 尝试使用 MSXML2.ServerXMLHTTP (备用) -----------------
+        AddLog("使用 " . primaryName . " 失败，尝试备用方案。错误: " . e1.Message . " URL: " . url, "RED")
+        ; ----------------- 2. 尝试使用备用方案 -----------------
         try {
-            AddLog("尝试使用 MSXML2.ServerXMLHTTP 备用方案下载...", "BLUE")
-            xhr := ComObject("MSXML2.ServerXMLHTTP.6.0")
-            ; 备用方案使用同步请求 (false)
-            xhr.Open("GET", url, false)
-            ; 参数顺序: 域名解析(5s), 连接(5s), 发送(10s), 接收(30s)
-            xhr.setTimeouts(5000, 5000, 10000, 30000)
-            ; 添加防缓存头，强制获取最新内容
-            xhr.setRequestHeader("Cache-Control", "no-cache")
-            xhr.setRequestHeader("Pragma", "no-cache")
-            xhr.setRequestHeader("If-Modified-Since", "Sat, 1 Jan 2000 00:00:00 GMT")
-            xhr.Send()
-            if (xhr.Status != 200) {
-                AddLog("备用方案下载 URL 内容失败，HTTP状态码: " . xhr.Status . " URL: " . url, "Red")
-                return ""
-            }
-            ; ----------------- MSXML2 内容解码逻辑 (与 WinHttp 逻辑相同) -----------------
-            responseBody := xhr.ResponseBody
-            if (IsObject(responseBody) && ComObjType(responseBody) & 0x2000) { ; SafeArray (VT_ARRAY)
-                dataPtr := 0, lBound := 0, uBound := 0
-                DllCall("OleAut32\SafeArrayGetLBound", "Ptr", ComObjValue(responseBody), "UInt", 1, "Int64*", &lBound)
-                DllCall("OleAut32\SafeArrayGetUBound", "Ptr", ComObjValue(responseBody), "UInt", 1, "Int64*", &uBound)
-                actualSize := uBound - lBound + 1
-                if (actualSize > 0) {
-                    DllCall("OleAut32\SafeArrayAccessData", "Ptr", ComObjValue(responseBody), "Ptr*", &dataPtr)
-                    content := StrGet(dataPtr, actualSize, "UTF-8")
-                    DllCall("OleAut32\SafeArrayUnaccessData", "Ptr", ComObjValue(responseBody))
-                    return content
-                } else {
-                    AddLog("下载 URL 内容警告 (备用): SafeArray 大小为0或无效，URL: " . url, "MAROON")
-                    return ""
-                }
-            } else if IsObject(responseBody) { ; Other COM object, try ADODB.Stream
-                Stream := ComObject("ADODB.Stream")
-                Stream.Type := 1 ; adTypeBinary
-                Stream.Open()
-                Stream.Write(responseBody)
-                Stream.Position := 0
-                Stream.Type := 2 ; adTypeText
-                Stream.Charset := "utf-8"
-                content := Stream.ReadText()
-                Stream.Close()
-                return content
-            } else { ; Not a COM object, fallback to ResponseText (may have encoding issues)
-                AddLog("下载 URL 内容警告 (备用): ResponseBody 不是预期类型，回退到 ResponseText，URL: " . url, "MAROON")
-                return xhr.ResponseText
-            }
+            AddLog("尝试使用 " . fallbackName . " 备用方案下载...", "BLUE")
+            return _DownloadWithMethod(fallbackName, url)
         } catch as e2 {
-            ; MSXML2 备用方案也失败
-            AddLog("下载 URL 内容时发生错误: 两次尝试均失败。WinHttp错误: " . e1.Message . " | MSXML2错误: " . e2.Message . " URL: " . url, "Red")
+            AddLog("下载 URL 内容时发生错误: 两次尝试均失败。" . primaryName . "错误: " . e1.Message . " | " . fallbackName . "错误: " . e2.Message . " URL: " . url, "Red")
             return ""
         }
+    }
+}
+_DownloadWithMethod(methodName, url) {
+    httpObj := ""
+    if (methodName = "WinHttp.WinHttpRequest.5.1") {
+        httpObj := ComObject("WinHttp.WinHttpRequest.5.1")
+        httpObj.Open("GET", url, true)
+        httpObj.Send()
+        httpObj.WaitForResponse(10) ; 10 秒超时
+        if (httpObj.Status != 200) {
+            throw Error("HTTP状态码非200 (" . methodName . ")", -1, "状态码: " . httpObj.Status)
+        }
+    } else {
+        httpObj := ComObject("MSXML2.ServerXMLHTTP.6.0")
+        httpObj.Open("GET", url, false)
+        httpObj.setTimeouts(5000, 5000, 10000, 30000)
+        httpObj.setRequestHeader("Cache-Control", "no-cache")
+        httpObj.setRequestHeader("Pragma", "no-cache")
+        httpObj.setRequestHeader("If-Modified-Since", "Sat, 1 Jan 2000 00:00:00 GMT")
+        httpObj.Send()
+        if (httpObj.Status != 200) {
+            throw Error("HTTP状态码非200 (" . methodName . ")", -1, "状态码: " . httpObj.Status)
+        }
+    }
+    responseBody := httpObj.ResponseBody
+    ; ----------------- 内容解码逻辑 -----------------
+    if (IsObject(responseBody) && ComObjType(responseBody) & 0x2000) { ; SafeArray (VT_ARRAY)
+        dataPtr := 0, lBound := 0, uBound := 0
+        DllCall("OleAut32\SafeArrayGetLBound", "Ptr", ComObjValue(responseBody), "UInt", 1, "Int64*", &lBound)
+        DllCall("OleAut32\SafeArrayGetUBound", "Ptr", ComObjValue(responseBody), "UInt", 1, "Int64*", &uBound)
+        actualSize := uBound - lBound + 1
+        if (actualSize > 0) {
+            DllCall("OleAut32\SafeArrayAccessData", "Ptr", ComObjValue(responseBody), "Ptr*", &dataPtr)
+            content := StrGet(dataPtr, actualSize, "UTF-8")
+            DllCall("OleAut32\SafeArrayUnaccessData", "Ptr", ComObjValue(responseBody))
+            return content
+        } else {
+            AddLog("下载 URL 内容警告: SafeArray 大小为0或无效，URL: " . url, "MAROON")
+            return ""
+        }
+    } else if IsObject(responseBody) { ; Other COM object, try ADODB.Stream
+        Stream := ComObject("ADODB.Stream")
+        Stream.Type := 1 ; adTypeBinary
+        Stream.Open()
+        Stream.Write(responseBody)
+        Stream.Position := 0
+        Stream.Type := 2 ; adTypeText
+        Stream.Charset := "utf-8"
+        content := Stream.ReadText()
+        Stream.Close()
+        return content
+    } else { ; Not a COM object, fallback to ResponseText (may have encoding issues)
+        AddLog("下载 URL 内容警告: ResponseBody 不是预期类型，回退到 ResponseText，URL: " . url, "MAROON")
+        return httpObj.ResponseText
     }
 }
 ;tag 计算SHA256哈希值
@@ -3335,6 +3341,8 @@ CheckUserGroup(forceUpdate := false) {
     }
     g_numeric_settings["UserLevel"] := highestMembership["UserLevel"]
     highestMembership["IsPremium"] := g_numeric_settings["UserLevel"] > 0
+    ; 获取当前使用的数据源
+    local currentSource := g_numeric_settings.Has("GroupDataSource") ? g_numeric_settings["GroupDataSource"] : "Gitee"
     if (highestMembership["IsPremium"]) {
         local formattedExpiryDate := ""
         if (g_numeric_settings["UserLevel"] == 3) {
@@ -3344,7 +3352,7 @@ CheckUserGroup(forceUpdate := false) {
         } else if (g_numeric_settings["UserLevel"] == 1) {
             try TraySetIcon("icon\CopperDoro.ico")
         }
-        AddLog("当前用户组：" . g_numeric_settings["UserGroup"] . " (有效期至 " . formattedExpiryDate . ") ", "Green")
+        AddLog("当前用户组：" . g_numeric_settings["UserGroup"] . " (有效期至 " . formattedExpiryDate . ")   数据源: " . currentSource, "Green")
         ; 检查会员是否明天到期
         ; local tomorrowDate := SubStr(DateAdd(A_Now, 1, "Days"), 1, 8) ; 获取明天的日期 (YYYYMMDD)
         ; if (highestMembership["VirtualExpiryDate"] == tomorrowDate) {
@@ -3355,7 +3363,7 @@ CheckUserGroup(forceUpdate := false) {
         ;     }
         ; }
     } else {
-        AddLog("当前用户组：普通用户 (免费用户)")
+        AddLog("当前用户组：普通用户 (免费用户)   数据源: " . currentSource, "Blue")
         try TraySetIcon("doro.ico")
     }
     ; AddLog("欢迎加入反馈qq群584275905")
@@ -3391,7 +3399,11 @@ CheckUserGroupByHash(inputHash) {
                 rawHashInfo["LastActiveDate"]
             )
         }
+        ; 获取当前使用的数据源
+        local currentSource := g_numeric_settings.Has("GroupDataSource") ? g_numeric_settings["GroupDataSource"] : "Gitee"
         local resultMessage := "查询哈希值: " . inputHash . "`n"
+        resultMessage .= "数据源: " . currentSource . "`n"
+        resultMessage .= "━━━━━━━━━━━━━━━━━━`n"
         if (memberInfo["UserLevel"] > 0 && memberInfo["RemainingValue"] > 0.001) { ; 检查是否有有效会员和剩余额度
             local formattedExpiryDate := SubStr(memberInfo["VirtualExpiryDate"], 1, 4) . "-" . SubStr(memberInfo["VirtualExpiryDate"], 5, 2) . "-" . SubStr(memberInfo["VirtualExpiryDate"], 7, 2)
             ; 获取当前区域的单价和货币名称
@@ -3407,11 +3419,11 @@ CheckUserGroupByHash(inputHash) {
             resultMessage .= "剩余额度：" . FormatOrangeValueWithLocalCurrency(memberInfo["RemainingValue"], unitPrice, currencyName, usdToCnyRate) . "`n"
             resultMessage .= "预计有效期至: " . formattedExpiryDate
             MsgBox(resultMessage, "用户组查询结果", "IconI")
-            AddLog("哈希值 '" . inputHash . "' 的用户组信息查询成功。", "Green")
+            AddLog("哈希值 '" . inputHash . "' 的用户组信息查询成功（来自" . currentSource . "）。", "Green")
         } else {
             resultMessage .= "未找到匹配的用户组信息或额度已用尽。"
             MsgBox(resultMessage, "用户组查询结果", "iconx")
-            AddLog("哈希值 '" . inputHash . "' 未找到匹配的用户组信息或额度已用尽。", "MAROON")
+            AddLog("哈希值 '" . inputHash . "' 未找到匹配的用户组信息或额度已用尽（来自" . currentSource . "）。", "MAROON")
         }
     } catch as e {
         MsgBox("检查用户组失败: " . e.Message, "错误", "IconX")
@@ -3984,7 +3996,7 @@ CalculateAndShowSpan(ExitReason := "", ExitCode := "") {
 ;tag bla自动对话
 AutoChat() {
     while (ok := FindText(&X, &Y, NikkeX + 0.366 * NikkeW . " ", NikkeY + 0.091 * NikkeH . " ", NikkeX + 0.366 * NikkeW + 0.012 * NikkeW . " ", NikkeY + 0.091 * NikkeH + 0.020 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("WIFI的图标"), , , , , , , TrueRatio, TrueRatio))
-    or (ok := FindText(&X, &Y, NikkeX + 0.571 * NikkeW . " ", NikkeY + 0.753 * NikkeH . " ", NikkeX + 0.571 * NikkeW + 0.065 * NikkeW . " ", NikkeY + 0.753 * NikkeH + 0.158 * NikkeH . " ", 0.2 * PicTolerance, 0.2 * PicTolerance, FindText().PicLib("对话框·想法"), , , , , , 3, TrueRatio, TrueRatio)) {
+        or (ok := FindText(&X, &Y, NikkeX + 0.571 * NikkeW . " ", NikkeY + 0.753 * NikkeH . " ", NikkeX + 0.571 * NikkeW + 0.065 * NikkeW . " ", NikkeY + 0.753 * NikkeH + 0.158 * NikkeH . " ", 0.2 * PicTolerance, 0.2 * PicTolerance, FindText().PicLib("对话框·想法"), , , , , , 3, TrueRatio, TrueRatio)) {
         if (ok := FindText(&X, &Y, NikkeX + 0.614 * NikkeW . " ", NikkeY + 0.210 * NikkeH . " ", NikkeX + 0.614 * NikkeW + 0.023 * NikkeW . " ", NikkeY + 0.210 * NikkeH + 0.700 * NikkeH . " ", 0.2 * PicTolerance, 0.2 * PicTolerance, FindText().PicLib("对话框·对话"), , , , , , 3, TrueRatio, TrueRatio)) {
             AddLog("点击对话")
             if (Mod(A_Index, 2) = 0) {
@@ -4143,25 +4155,25 @@ BattleSettlement(currentVictory := 0, modes*) {
                 if BattleSkip := 1
                     AddLog("截图功能已启用", "Green")
             }
-            case "RedCircle":
-            {
-                RedCircle := true
-                if BattleSkip := 1
-                    AddLog("红圈功能已启用", "Green")
-            }
-            case "Exit7":
-            {
-                Exit7 := true
-                if BattleSkip := 1
-                    AddLog("满7自动退出功能已启用", "Green")
-            }
-            case "EventStory":
-            {
-                EventStory := true
-                if BattleSkip := 1
-                    AddLog("剧情跳过功能已启用", "Green")
-            }
-            default: MsgBox "格式输入错误，你输入的是" mode
+                case "RedCircle":
+                {
+                    RedCircle := true
+                    if BattleSkip := 1
+                        AddLog("红圈功能已启用", "Green")
+                }
+                    case "Exit7":
+                    {
+                        Exit7 := true
+                        if BattleSkip := 1
+                            AddLog("满7自动退出功能已启用", "Green")
+                    }
+                        case "EventStory":
+                        {
+                            EventStory := true
+                            if BattleSkip := 1
+                                AddLog("剧情跳过功能已启用", "Green")
+                        }
+                            default: MsgBox "格式输入错误，你输入的是" mode
         }
     }
     AddLog("等待战斗结算")
@@ -4282,7 +4294,6 @@ BattleSettlement(currentVictory := 0, modes*) {
         if (ok := FindText(&X, &Y, NikkeX + 0.510 * NikkeW . " ", NikkeY + 0.394 * NikkeH . " ", NikkeX + 0.510 * NikkeW + 0.029 * NikkeW . " ", NikkeY + 0.394 * NikkeH + 0.039 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("蓝色的UP"), , , , , , , TrueRatio, TrueRatio)) {
             Confirm
         }
-
         ;间隔500ms
         Sleep 500
     }
@@ -4700,18 +4711,18 @@ AutoSwitchLanguage() {
                     {
                         language := FindText().PicLib("ENGLISH")
                     }
-                    case 2:
-                    {
-                        language := FindText().PicLib("日本语")
-                    }
-                    case 3:
-                    {
-                        language := FindText().PicLib("(繁体)")
-                    }
-                    case 4:
-                    {
-                        language := FindText().PicLib("(简体)")
-                    }
+                        case 2:
+                        {
+                            language := FindText().PicLib("日本语")
+                        }
+                            case 3:
+                            {
+                                language := FindText().PicLib("(繁体)")
+                            }
+                                case 4:
+                                {
+                                    language := FindText().PicLib("(简体)")
+                                }
                 }
                 if (ok := FindText(&X, &Y, NikkeX + 0.505 * NikkeW . " ", NikkeY + 0.283 * NikkeH . " ", NikkeX + 0.505 * NikkeW + 0.116 * NikkeW . " ", NikkeY + 0.283 * NikkeH + 0.327 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, language, , , , , , , TrueRatio, TrueRatio)) {
                     FindText().Click(X, Y, "L")
@@ -6696,7 +6707,7 @@ ClearRed() {
 ClearRedRecycling() {
     AddLog("自动升级循环室", "Fuchsia")
     if (ok := FindText(&X, &Y, NikkeX + 0.341 * NikkeW . " ", NikkeY + 0.714 * NikkeH . " ", NikkeX + 0.341 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.714 * NikkeH + 0.031 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio))
-    || (ok := FindText(&X, &Y, NikkeX + 0.341 * NikkeW . " ", NikkeY + 0.714 * NikkeH . " ", NikkeX + 0.341 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.714 * NikkeH + 0.031 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红底的N图标"), , , , , , , TrueRatio, TrueRatio)) {
+        || (ok := FindText(&X, &Y, NikkeX + 0.341 * NikkeW . " ", NikkeY + 0.714 * NikkeH . " ", NikkeX + 0.341 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.714 * NikkeH + 0.031 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红底的N图标"), , , , , , , TrueRatio, TrueRatio)) {
         AddLog("进入前哨基地")
         FindText().Click(X, Y, "L")
         Sleep 1000
@@ -7076,7 +7087,7 @@ ClearRedWallpaper() {
 ClearRedProfile() {
     AddLog("清除个人页红点", "Fuchsia")
     if (FindText(&X := "wait", &Y := 1, NikkeX + 0.028 * NikkeW . " ", NikkeY + 0.000 * NikkeH . " ", NikkeX + 0.028 * NikkeW + 0.020 * NikkeW . " ", NikkeY + 0.000 * NikkeH + 0.032 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红底的N图标"), , , , , , , TrueRatio, TrueRatio))
-    || (FindText(&X := "wait", &Y := 1, NikkeX + 0.028 * NikkeW . " ", NikkeY + 0.000 * NikkeH . " ", NikkeX + 0.028 * NikkeW + 0.020 * NikkeW . " ", NikkeY + 0.000 * NikkeH + 0.032 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
+        || (FindText(&X := "wait", &Y := 1, NikkeX + 0.028 * NikkeW . " ", NikkeY + 0.000 * NikkeH . " ", NikkeX + 0.028 * NikkeW + 0.020 * NikkeW . " ", NikkeY + 0.000 * NikkeH + 0.032 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
         AddLog("点击左上角的个人头像")
         FindText().Click(X, Y, "L")
         Sleep 1000
@@ -7094,7 +7105,7 @@ ClearRedProfile() {
             Sleep 1000
         }
         if (FindText(&X := "wait", &Y := 1, NikkeX + 0.556 * NikkeW . " ", NikkeY + 0.217 * NikkeH . " ", NikkeX + 0.556 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.217 * NikkeH + 0.029 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红底的N图标"), , , , , , , TrueRatio, TrueRatio))
-        || (FindText(&X := "wait", &Y := 1, NikkeX + 0.556 * NikkeW . " ", NikkeY + 0.217 * NikkeH . " ", NikkeX + 0.556 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.217 * NikkeH + 0.029 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
+            || (FindText(&X := "wait", &Y := 1, NikkeX + 0.556 * NikkeW . " ", NikkeY + 0.217 * NikkeH . " ", NikkeX + 0.556 * NikkeW + 0.016 * NikkeW . " ", NikkeY + 0.217 * NikkeH + 0.029 * NikkeH . " ", 0.4 * PicTolerance, 0.4 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
             AddLog("点击称号")
             FindText().Click(X, Y, "L")
             Sleep 1000
