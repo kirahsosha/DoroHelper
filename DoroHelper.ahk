@@ -18,7 +18,7 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.14.0"
+currentVersion := "v1.14.1"
 ; 判断拓展名
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
@@ -178,7 +178,7 @@ global g_numeric_settings := Map(
     "Version", currentVersion,          ; 版本号
     "UpdateChannels", "正式版",         ; 更新渠道
     "DownloadSource", "GitHub",         ; 下载源
-    "GroupDataSource", "Gitee",         ; 用户组数据源 (Gitee/GitHub/RawGit)
+    "GroupDataSource", "Gitee",         ; 用户组数据源 (Gitee/GitHub/jsDelivr)
     "PreferredHttpRequest", "WinHttp.WinHttpRequest.5.1", ; HTTP 请求优先级
     "UserGroup", "普通用户",             ; 用户组
     "UserLevel", 0                      ; 用户级别
@@ -444,9 +444,9 @@ cbSkipGroupCheck := AddCheckboxSetting(doroGui, "SkipUserGroupCheckForFreeUser",
 doroGui.Tips.SetTip(cbSkipGroupCheck, "勾选后，非会员用户启动时将跳过用户组检查以节省时间`nSkip user group check for free users to save startup time")
 g_settingPages["Settings"].Push(cbSkipGroupCheck)
 TextGroupDataSource := doroGui.Add("Text", "R1 +0x0100", "用户组数据源")
-doroGui.Tips.SetTip(TextGroupDataSource, "用户组数据源镜像`nGitee:国内源(推荐)|GitHub:官方源|RawGit:CDN加速`nUser Group Data Source Mirror`nGitee: Domestic (Recommended) | GitHub: Official | RawGit: CDN Accelerated")
+doroGui.Tips.SetTip(TextGroupDataSource, "用户组数据源镜像`nGitee:国内源(推荐)|GitHub:官方源|jsDelivr:CDN加速`nUser Group Data Source Mirror`nGitee: Domestic (Recommended) | GitHub: Official | jsDelivr: CDN Accelerated")
 g_settingPages["Settings"].Push(TextGroupDataSource)
-cbGroupDataSource := doroGui.AddDropDownList("x+20 w100", ["Gitee", "GitHub", "RawGit"])
+cbGroupDataSource := doroGui.AddDropDownList("x+20 w100", ["Gitee", "GitHub", "jsDelivr"])
 cbGroupDataSource.Text := g_numeric_settings["GroupDataSource"]
 cbGroupDataSource.OnEvent("Change", (Ctrl, Info) => g_numeric_settings["GroupDataSource"] := Ctrl.Text)
 g_settingPages["Settings"].Push(cbGroupDataSource)
@@ -3768,7 +3768,7 @@ CheckAccountLimit(currentWinID) {
     }
     if (currentCount >= maxInstances) {
         userType := (userLevel >= 4) ? "金Doro企业版" : "普通/个人会员"
-        MsgBox("今日运行账号/游戏实例已达上限！`n`n当前用户组: " userType "`n今日限制: " maxInstances " 个`n已运行: " currentCount " 个`n`n注意：重启游戏客户端会生成新的ID并消耗次数。", "运行限制", "IconX")
+        MsgBox("今日本设备运行的游戏实例已达上限！`n`n当前用户组: " userType "`n今日限制: " maxInstances " 个`n已运行: " currentCount " 个`n`n赞助可以增加这个上限", "运行限制", "IconX")
         return false
     }
     ; 记录新的winID
@@ -3987,7 +3987,7 @@ CalculateAndShowSpan(ExitReason := "", ExitCode := "") {
     }
     outputText .= remainingSeconds " 秒"
     AddLog(outputText)
-    if (spanSeconds < 5) {
+    if (spanSeconds < 2) {
         MsgBox("没怎么运行就结束了，任务列表勾了吗？还是没有进行详细的任务设置呢？")
     }
 }
@@ -4249,12 +4249,12 @@ BattleSettlement(currentVictory := 0, modes*) {
                 Send "{4}"
             }
             ; GalGame确认
-            if (ok := FindText(&X, &Y, NikkeX + 0.447 * NikkeW . " ", NikkeY + 0.592 * NikkeH . " ", NikkeX + 0.447 * NikkeW + 0.108 * NikkeW . " ", NikkeY + 0.592 * NikkeH + 0.060 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("GalGame的确认"), , , , , , , TrueRatio, TrueRatio)) {
+            if (ok := FindText(&X, &Y, NikkeX + 0.434 * NikkeW . " ", NikkeY + 0.556 * NikkeH . " ", NikkeX + 0.434 * NikkeW + 0.132 * NikkeW . " ", NikkeY + 0.556 * NikkeH + 0.115 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("GalGame的确认"), , , , , , , TrueRatio, TrueRatio)) {
                 FindText().Click(X, Y, "L")
                 Sleep 500
             }
             ; GalGame确认2
-            if (ok := FindText(&X, &Y, NikkeX + 0.430 * NikkeW . " ", NikkeY + 0.551 * NikkeH . " ", NikkeX + 0.430 * NikkeW + 0.141 * NikkeW . " ", NikkeY + 0.551 * NikkeH + 0.063 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("GalGame的确认"), , , , , , , TrueRatio, TrueRatio)) {
+            if (ok := FindText(&X, &Y, NikkeX + 0.434 * NikkeW . " ", NikkeY + 0.556 * NikkeH . " ", NikkeX + 0.434 * NikkeW + 0.132 * NikkeW . " ", NikkeY + 0.556 * NikkeH + 0.115 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("GalGame的确认"), , , , , , , TrueRatio, TrueRatio)) {
                 FindText().Click(X, Y, "L")
                 Sleep 500
             }
@@ -5764,37 +5764,22 @@ AwardAdvise() {
             AddLog("妮姬咨询任务已超过20次，结束任务", "MAROON")
             break
         }
-        ; if (ok := FindText(&X, &Y, NikkeX + 0.637 * NikkeW . " ", NikkeY + 0.672 * NikkeH . " ", NikkeX + 0.637 * NikkeW + 0.004 * NikkeW . " ", NikkeY + 0.672 * NikkeH + 0.013 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红色的20进度"), , , , , , , TrueRatio, TrueRatio)) {
-        ;     AddLog("图鉴已满")
-        ;     ; 检测是否 MAX
-        ;     isMax := FindText(&X_Max, &Y_Max, NikkeX + 0.541 * NikkeW . " ", NikkeY + 0.637 * NikkeH . " ", NikkeX + 0.541 * NikkeW + 0.030 * NikkeW . " ", NikkeY + 0.637 * NikkeH + 0.028 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("咨询·MAX"), , , , , , , TrueRatio, TrueRatio)
-        ;     ; 如果是 MAX 且 未开启强制执行，则跳过
-        ;     if (isMax and !g_settings["AwardAdviseForce"]) {
-        ;         AddLog("好感度已满，跳过")
-        ;     }
-        ;     ; 如果 (不是 MAX) 或者 (是 MAX 但开启了强制执行)，则尝试快速咨询
-        ;     else if (ok := FindText(&X, &Y, NikkeX + 0.501 * NikkeW . " ", NikkeY + 0.726 * NikkeH . " ", NikkeX + 0.501 * NikkeW + 0.130 * NikkeW . " ", NikkeY + 0.726 * NikkeH + 0.059 * NikkeH . " ", 0.2 * PicTolerance, 0.2 * PicTolerance, FindText().PicLib("快速咨询的图标"), , , , , , , TrueRatio, TrueRatio)) {
-        ;         AddLog(isMax ? "强制执行：尝试快速咨询" : "尝试快速咨询")
-        ;         FindText().Click(X, Y, "L")
-        ;         Sleep 1000
-        ;         if (ok := FindText(&X, &Y, NikkeX + 0.506 * NikkeW . " ", NikkeY + 0.600 * NikkeH . " ", NikkeX + 0.506 * NikkeW + 0.125 * NikkeW . " ", NikkeY + 0.600 * NikkeH + 0.054 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("带圈白勾"), , , , , , , TrueRatio, TrueRatio)) {
-        ;             FindText().Click(X, Y, "L")
-        ;             AddLog("已咨询" A_Index "次", "GREEN")
-        ;             Sleep 1000
-        ;         }
-        ;     }
-        ;     else AddLog("该妮姬已咨询")
-        ;     if (ok := FindText(&X, &Y, NikkeX + 0.361 * NikkeW . " ", NikkeY + 0.512 * NikkeH . " ", NikkeX + 0.361 * NikkeW + 0.026 * NikkeW . " ", NikkeY + 0.512 * NikkeH + 0.046 * NikkeH . " ", 0.2 * PicTolerance, 0.2 * PicTolerance, FindText().PicLib("红色的收藏图标"), , , , , , , TrueRatio, TrueRatio)) {
-        ;         FindText().Click(X, Y, "L")
-        ;         AddLog("取消收藏该妮姬")
-        ;     }
-        ; } else {
-        AddLog("图鉴未满")
-        if (ok := FindText(&X, &Y, NikkeX + 0.502 * NikkeW . " ", NikkeY + 0.780 * NikkeH . " ", NikkeX + 0.502 * NikkeW + 0.131 * NikkeW . " ", NikkeY + 0.780 * NikkeH + 0.088 * NikkeH . " ", 0.2 * PicTolerance, 0.2 * PicTolerance, FindText().PicLib("咨询的咨"), , , , , , , TrueRatio, TrueRatio)) {
-            AddLog("尝试普通咨询")
-            FindText().Click(X + 50 * TrueRatio, Y, "L")
-            Sleep 1000
-            if (ok := FindText(&X, &Y, NikkeX + 0.506 * NikkeW . " ", NikkeY + 0.600 * NikkeH . " ", NikkeX + 0.506 * NikkeW + 0.125 * NikkeW . " ", NikkeY + 0.600 * NikkeH + 0.054 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("带圈白勾"), , , , , , , TrueRatio, TrueRatio)) {
+        if (ok := FindText(&X, &Y, NikkeX + 0.637 * NikkeW . " ", NikkeY + 0.672 * NikkeH . " ", NikkeX + 0.637 * NikkeW + 0.004 * NikkeW . " ", NikkeY + 0.672 * NikkeH + 0.013 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红色的20进度"), , , , , , , TrueRatio, TrueRatio)) {
+            AddLog("图鉴已满")
+            ; 检测是否好感度已满
+            isMax := FindText(&X_Max, &Y_Max, NikkeX + 0.541 * NikkeW . " ", NikkeY + 0.637 * NikkeH . " ", NikkeX + 0.541 * NikkeW + 0.030 * NikkeW . " ", NikkeY + 0.637 * NikkeH + 0.028 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("咨询·MAX"), , , , , , , TrueRatio, TrueRatio)
+            ; 如果好感度已满且未开启强制执行，则跳过
+            if (isMax and !g_settings["AwardAdviseForce"]) {
+                AddLog("好感度已满，跳过")
+                ; 检测并取消收藏：图鉴已满且好感度已满的情况
+                if (ok := FindText(&X, &Y, NikkeX + 0.361 * NikkeW . " ", NikkeY + 0.512 * NikkeH . " ", NikkeX + 0.361 * NikkeW + 0.026 * NikkeW . " ", NikkeY + 0.512 * NikkeH + 0.046 * NikkeH . " ", 0.2 * PicTolerance, 0.2 * PicTolerance, FindText().PicLib("红色的收藏图标"), , , , , , , TrueRatio, TrueRatio)) {
+                    FindText().Click(X, Y, "L")
+                    AddLog("取消收藏该妮姬 (图鉴已满且好感度已满)")
+                }
+            }
+            ; 如果 (好感度未满) 或者 (好感度已满但开启了强制执行)，则尝试快速咨询
+            else if (ok := FindText(&X, &Y, NikkeX + 0.501 * NikkeW . " ", NikkeY + 0.726 * NikkeH . " ", NikkeX + 0.501 * NikkeW + 0.130 * NikkeW . " ", NikkeY + 0.726 * NikkeH + 0.059 * NikkeH . " ", 0.2 * PicTolerance, 0.2 * PicTolerance, FindText().PicLib("快速咨询的图标"), , , , , , , TrueRatio, TrueRatio)) {
+                AddLog(isMax ? "强制执行：尝试快速咨询" : "尝试快速咨询")
                 FindText().Click(X, Y, "L")
                 Sleep 1000
                 AddLog("已咨询" A_Index "次")
@@ -5811,13 +5796,45 @@ AwardAdvise() {
                 if A_Index > 5 and (ok := FindText(&X, &Y, NikkeX + 0.003 * NikkeW . " ", NikkeY + 0.009 * NikkeH . " ", NikkeX + 0.003 * NikkeW + 0.069 * NikkeW . " ", NikkeY + 0.009 * NikkeH + 0.050 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("圈中的感叹号"), , , , , , , TrueRatio, TrueRatio)) {
                     break
                 }
+                ; 检测并取消收藏：执行强制咨询的情况
+                if (g_settings["AwardAdviseForce"] and isMax) {
+                    if (ok := FindText(&X, &Y, NikkeX + 0.361 * NikkeW . " ", NikkeY + 0.512 * NikkeH . " ", NikkeX + 0.361 * NikkeW + 0.026 * NikkeW . " ", NikkeY + 0.512 * NikkeH + 0.046 * NikkeH . " ", 0.2 * PicTolerance, 0.2 * PicTolerance, FindText().PicLib("红色的收藏图标"), , , , , , , TrueRatio, TrueRatio)) {
+                        FindText().Click(X, Y, "L")
+                        AddLog("取消收藏该妮姬 (执行强制咨询)")
+                    }
+                }
             }
-            Sleep 1000
+            else AddLog("该妮姬已咨询")
+        } else {
+            AddLog("图鉴未满")
+            if (ok := FindText(&X, &Y, NikkeX + 0.502 * NikkeW . " ", NikkeY + 0.780 * NikkeH . " ", NikkeX + 0.502 * NikkeW + 0.131 * NikkeW . " ", NikkeY + 0.780 * NikkeH + 0.088 * NikkeH . " ", 0.2 * PicTolerance, 0.2 * PicTolerance, FindText().PicLib("咨询的咨"), , , , , , , TrueRatio, TrueRatio)) {
+                AddLog("尝试普通咨询")
+                FindText().Click(X + 50 * TrueRatio, Y, "L")
+                Sleep 1000
+                if (ok := FindText(&X, &Y, NikkeX + 0.506 * NikkeW . " ", NikkeY + 0.600 * NikkeH . " ", NikkeX + 0.506 * NikkeW + 0.125 * NikkeW . " ", NikkeY + 0.600 * NikkeH + 0.054 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("带圈白勾"), , , , , , , TrueRatio, TrueRatio)) {
+                    FindText().Click(X, Y, "L")
+                    Sleep 1000
+                    AddLog("已咨询" A_Index "次")
+                }
+                Sleep 1000
+                while true {
+                    AddLog("随机点击对话框")
+                    UserClick(1894, 1440, TrueRatio) ;点击1号位默认位置
+                    Sleep 200
+                    UserClick(1903, 1615, TrueRatio) ;点击2号位默认位置
+                    Sleep 200
+                    Send "{]}" ;尝试跳过
+                    Sleep 200
+                    if A_Index > 5 and (ok := FindText(&X, &Y, NikkeX + 0.003 * NikkeW . " ", NikkeY + 0.009 * NikkeH . " ", NikkeX + 0.003 * NikkeW + 0.069 * NikkeW . " ", NikkeY + 0.009 * NikkeH + 0.050 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("圈中的感叹号"), , , , , , , TrueRatio, TrueRatio)) {
+                        break
+                    }
+                }
+                Sleep 1000
+            }
+            else {
+                AddLog("该妮姬已咨询")
+            }
         }
-        else {
-            AddLog("该妮姬已咨询")
-        }
-        ; }
         while !(ok := FindText(&X, &Y, NikkeX + 0.003 * NikkeW . " ", NikkeY + 0.009 * NikkeH . " ", NikkeX + 0.003 * NikkeW + 0.069 * NikkeW . " ", NikkeY + 0.009 * NikkeH + 0.050 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("圈中的感叹号"), , , , , , , TrueRatio, TrueRatio)) {
             AddLog("确认咨询结算")
             Confirm
@@ -6072,14 +6089,14 @@ OneAwardPass() {
         if (ok := FindText(&X, &Y, NikkeX + 0.430 * NikkeW . " ", NikkeY + 0.850 * NikkeH . " ", NikkeX + 0.430 * NikkeW + 0.143 * NikkeW . " ", NikkeY + 0.850 * NikkeH + 0.052 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("特殊通行证·全部领取"), , , , , , , TrueRatio, TrueRatio)) and !(ok := FindText(&X, &Y, NikkeX + 0.429 * NikkeW . " ", NikkeY + 0.903 * NikkeH . " ", NikkeX + 0.429 * NikkeW + 0.143 * NikkeW . " ", NikkeY + 0.903 * NikkeH + 0.050 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("SP灰色的全部"), , , , , , , TrueRatio, TrueRatio)) {
             loop 3 {
                 FindText().Click(X, Y, "L") ;特殊活动点领取
-                Sleep 500
+                Sleep 1000
             }
             continue
         }
         if !(ok := FindText(&X, &Y, NikkeX + 0.430 * NikkeW . " ", NikkeY + 0.851 * NikkeH . " ", NikkeX + 0.430 * NikkeW + 0.140 * NikkeW . " ", NikkeY + 0.851 * NikkeH + 0.125 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("灰色的全部"), , , , , , , TrueRatio, TrueRatio)) and !(ok := FindText(&X, &Y, NikkeX + 0.430 * NikkeW . " ", NikkeY + 0.851 * NikkeH . " ", NikkeX + 0.430 * NikkeW + 0.140 * NikkeW . " ", NikkeY + 0.851 * NikkeH + 0.125 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("SP灰色的全部"), , , , , , , TrueRatio, TrueRatio)) {
             loop 3 {
                 UserClick(2168, 2020, TrueRatio) ;点领取
-                Sleep 500
+                Sleep 1000
             }
         }
     }
@@ -7139,7 +7156,8 @@ ClearRedProfile() {
 ;tag 清除bla红点
 ClearRedBla() {
     AddLog("清除bla红点", "Fuchsia")
-    while (ok := FindText(&X, &Y, NikkeX + 0.034 * NikkeW . " ", NikkeY + 0.169 * NikkeH . " ", NikkeX + 0.034 * NikkeW + 0.015 * NikkeW . " ", NikkeY + 0.169 * NikkeH + 0.028 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红底的N图标"), , , , , , , TrueRatio, TrueRatio)) {
+    while (ok := FindText(&X, &Y, NikkeX + 0.034 * NikkeW . " ", NikkeY + 0.169 * NikkeH . " ", NikkeX + 0.034 * NikkeW + 0.015 * NikkeW . " ", NikkeY + 0.169 * NikkeH + 0.028 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红底的N图标"), , , , , , , TrueRatio, TrueRatio))
+        || (ok := FindText(&X, &Y, NikkeX + 0.034 * NikkeW . " ", NikkeY + 0.169 * NikkeH . " ", NikkeX + 0.034 * NikkeW + 0.015 * NikkeW . " ", NikkeY + 0.169 * NikkeH + 0.028 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("红点"), , , , , , , TrueRatio, TrueRatio)) {
         FindText().Click(X, Y, "L")
         Sleep 3000
         if g_settings["ClearRedBlaAwards"] {
