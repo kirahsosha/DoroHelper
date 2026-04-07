@@ -5782,19 +5782,10 @@ AwardAdvise() {
                 AddLog(isMax ? "强制执行：尝试快速咨询" : "尝试快速咨询")
                 FindText().Click(X, Y, "L")
                 Sleep 1000
-                AddLog("已咨询" A_Index "次")
-            }
-            Sleep 1000
-            while true {
-                AddLog("随机点击对话框")
-                UserClick(1894, 1440, TrueRatio) ;点击1号位默认位置
-                Sleep 200
-                UserClick(1903, 1615, TrueRatio) ;点击2号位默认位置
-                Sleep 200
-                Send "{]}" ;尝试跳过
-                Sleep 200
-                if A_Index > 5 and (ok := FindText(&X, &Y, NikkeX + 0.003 * NikkeW . " ", NikkeY + 0.009 * NikkeH . " ", NikkeX + 0.003 * NikkeW + 0.069 * NikkeW . " ", NikkeY + 0.009 * NikkeH + 0.050 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("圈中的感叹号"), , , , , , , TrueRatio, TrueRatio)) {
-                    break
+                if (ok := FindText(&X, &Y, NikkeX + 0.506 * NikkeW . " ", NikkeY + 0.600 * NikkeH . " ", NikkeX + 0.506 * NikkeW + 0.125 * NikkeW . " ", NikkeY + 0.600 * NikkeH + 0.054 * NikkeH . " ", 0.3 * PicTolerance, 0.3 * PicTolerance, FindText().PicLib("带圈白勾"), , , , , , , TrueRatio, TrueRatio)) {
+                    FindText().Click(X, Y, "L")
+                    AddLog("已咨询" A_Index "次", "GREEN")
+                    Sleep 1000
                 }
                 ; 检测并取消收藏：执行强制咨询的情况
                 if (g_settings["AwardAdviseForce"] and isMax) {
