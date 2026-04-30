@@ -18,7 +18,7 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.14.7"
+currentVersion := "v1.14.8"
 ; 判断拓展名
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
@@ -847,6 +847,7 @@ HideAllSettings()
 ShowSetting("Default")
 doroGui.OnEvent("Close", (*) => ExitApp())
 doroGui.Show("x" g_numeric_settings["doroGuiX"] " y" g_numeric_settings["doroGuiY"])
+ShowMigrationNotice()
 ;endregion 创建GUI
 ;tag 彩蛋
 CheckSequence(key_char) {
@@ -2705,10 +2706,7 @@ CalculateSponsorInfo(thisGuiButton, info) {
     global radDuration, edtAmount
     global g_MembershipLevels, g_PriceMap, LocaleName
     today := A_YYYY A_MM A_DD
-    mainBoardSerial := GetMainBoardSerial()
-    cpuSerial := GetCpuSerial()
-    diskSerial := GetDiskSerial()
-    Hashed := HashSHA256(mainBoardSerial . cpuSerial . diskSerial)
+    Hashed := GenerateDeviceCode()
     ; 获取用户当前信息
     currentUserInfo := CheckUserGroup(true)
     currentLevel := currentUserInfo["UserLevel"]
@@ -2814,8 +2812,9 @@ CalculateSponsorInfo(thisGuiButton, info) {
     ; 格式化生效日期 (解决问题2)
     finalRegistrationDateFormatted := SubStr(finalLastActiveDate, 1, 4) . "-" . SubStr(finalLastActiveDate, 5, 2) . "-" . SubStr(finalLastActiveDate, 7, 2)
     ; 生成 JSON
-    jsonString := UserStatus "`n"
+    jsonString := UserStatus " (V5用户码)`n"
     jsonString .= "(请将这段文字替换成您的付款截图，邮件的图片请以附件形式发送)`n"
+    jsonString .= "第五代用`n"
     jsonString .= "  {" . "`n"
     jsonString .= "`"hash`": `"" Hashed "`"," . "`n"
     jsonString .= "`"tier`": `"" finalTier "`"," . "`n"
@@ -2826,6 +2825,7 @@ CalculateSponsorInfo(thisGuiButton, info) {
     ; 修正 msgStr 中的额度和日期格式 (解决问题1和问题2)
     msgStr := "赞助信息已生成并复制到剪贴板，请在对应页面按ctrl+v粘贴，然后连同付款记录发给我`n"
         . "状态: " . UserStatus . "`n"
+        . "用户码版本: V5`n"
         . "您将获得的会员类型: " . finalTier . "`n"
         . "新会员总额度: " . Format("{:0.2f}", displayRemainingValue) . " ORANGE`n" ; 使用实际剩余额度
     if (finalTier != "普通用户") {
@@ -3075,6 +3075,11 @@ GetMainBoardSerial() {
     }
     return "未找到序列号"
 }
+;tag 生成设备码
+GenerateDeviceCode() {
+    ; 主板序列号通常比 CPU、硬盘序列号更不容易因更换硬件或系统环境变化而改变。
+    return HashSHA256(GetMainBoardSerial())
+}
 ;tag 获取CPU序列号的函数
 GetCpuSerial() {
     wmi := ComObjGet("winmgmts:\\.\root\cimv2")
@@ -3103,9 +3108,20 @@ GetDiskSerialsForValidation() {
     }
     return diskSerials
 }
+;tag 生成旧版设备码列表
+GenerateLegacyDeviceCodes() {
+    local mainBoardSerial := GetMainBoardSerial()
+    local cpuSerial := GetCpuSerial()
+    local diskSerials := GetDiskSerialsForValidation()
+    local hashes := []
+    for diskSerial in diskSerials {
+        hashes.Push(HashSHA256(mainBoardSerial . cpuSerial . diskSerial))
+    }
+    return hashes
+}
 ;tag 获取并解析用户组数据
 ; 成功返回 Map 对象，失败抛出 Error
-FetchAndParseGroupData() {
+FetchAndParseGroupData(version := 5) {
     ; giteeUrl := "https://gitee.com/con_sul/DoroHelper/raw/main/group/GroupArrayV4.json"
     ; githubUrl := "https://raw.githubusercontent.com/1204244136/DoroHelper/refs/heads/main/group/GroupArrayV4.json"
     jsonContent := "[`n  {`n    `"hash`": `"bdd27a59bc2aba8a76d4574718b1852e6967ad73aa3e3c2a4b5aa771714396b8`",`n    `"tier`": `"金Doro会员`",`n    `"expiry_date`": `"20351213`"`n  }`n  ]"
@@ -3157,7 +3173,8 @@ GetMembershipInfoForHash(targetHash, groupData) {
         "MembershipType", "普通用户",
         "UserLevel", 0,
         "RemainingValue", 0.0,      ; 新增字段
-        "LastActiveDate", "19991231" ; 新增字段
+        "LastActiveDate", "19991231", ; 新增字段
+        "Hash", targetHash
     )
     for _, memberInfo in groupData {
         if IsObject(memberInfo) && memberInfo.Has("hash") && (memberInfo["hash"] == targetHash) {
@@ -3175,6 +3192,7 @@ GetMembershipInfoForHash(targetHash, groupData) {
                 result["UserLevel"] := level
                 result["RemainingValue"] := memberAccountValue
                 result["LastActiveDate"] := memberLastActiveDate
+                result["Hash"] := targetHash
                 return result
             } else {
                 AddLog("警告: 在JSON中找到哈希 '" . targetHash . "'，但会员信息不完整 (缺少tier, account_value 或 registration_date)。", "MAROON")
@@ -3252,6 +3270,7 @@ CheckUserGroup(forceUpdate := false) {
     static cachedUserGroupInfo := false
     static cacheTimestamp := 0 ; 记录缓存更新时间
     static reminderShown := false ; 新增：记录是否已显示过提醒
+    static legacyUpdatePromptShown := false ; 记录是否已提示过旧版用户码迁移
     ; 默认返回的普通用户状态
     local defaultUserGroupInfo := Map(
         "MembershipType", "普通用户",
@@ -3287,9 +3306,9 @@ CheckUserGroup(forceUpdate := false) {
         }
     }
     AddLog(!forceUpdate ? "首次运行或强制更新，正在检查用户组信息……" : "强制检查用户组信息……", "Blue")
-    local groupData
+    local groupDataV5, groupDataV4
     try {
-        groupData := FetchAndParseGroupData()
+        groupDataV5 := FetchAndParseGroupData(5)
     } catch as e {
         AddLog("用户组检查失败: " . e.Message, "Red")
         cachedUserGroupInfo := Map("MembershipType", "普通用户", "UserLevel", 3, "ExpirationTime", "20301231")
@@ -3492,6 +3511,22 @@ ShowSetting(pageName) {
 }
 ;endregion GUI辅助函数
 ;region 消息辅助函数
+;tag 启动告知
+ShowMigrationNotice(*) {
+    noticeText := "非常感谢大家一直以来对 dorohelper 的支持与陪伴。`n`n"
+        . "在持续开发与维护的过程中，我逐渐意识到，当前脚本的整体架构已经较为老旧，这在一定程度上限制了后续功能扩展与长期维护的效率。因此，我做出了一个重要决定：基于全新的 MaaFramework 框架，对脚本进行一次完整重写。新版脚本将命名为 MDA（Maa Doro Assistant）。借助这一成熟且强大的社区工具，未来在修复问题与更新内容方面，我将能够更加高效、稳定地推进开发。`n`n"
+        . "相比旧版本，新框架将带来一系列显著提升：`n`n"
+        . "全新UI设计，界面更加简洁美观，并原生支持多语言，可自由设置主题、配色与背景`n"
+        . "支持任务顺序自由调整，并提供更加丰富的细节配置选项`n"
+        . "支持游戏后台运行，使用体验更加灵活`n"
+        . "支持全分辨率运行，不再受限于特定分辨率`n"
+        . "支持 Linux、macOS 等操作系统，并兼容 aarch64 架构，未来也可能探索移动端支持`n`n"
+        . "关于开发进度，目前我正在全力推进新版本的开发，预计不久后即可与大家见面。也正因如此，近期未能及时更新旧版本，在此向大家致以诚挚的歉意。`n`n"
+        . "在会员系统方面，新脚本将全面继承现有体系，并在不影响既有会员权益的前提下，对部分细节进行优化与调整。`n`n"
+        . "至于旧版本，未来将基本停止维护，但不会下线，大家仍然可以正常获取与使用。如果新版本未能符合你的使用习惯，也欢迎继续选择旧版本。`n`n"
+        . "再次感谢大家的理解与支持！"
+    MsgBox(noticeText, "重要告知", "Iconi")
+}
 ;tag 活动结束提醒
 CheckEvent(*) {
     MyFileShortHash := SubStr(A_Now, 1, 8)
@@ -3592,10 +3627,8 @@ CopyLog(*) {
 ;tag 生成设备信息并复制
 Devicecode(*) {
     mainBoardSerial := GetMainBoardSerial()
-    cpuSerial := GetCpuSerial()
-    diskSerial := GetDiskSerial()
-    Hashed := HashSHA256(mainBoardSerial . cpuSerial . diskSerial)
-    informatinon := "主板序列号: " mainBoardSerial "`nCPU序列号: " cpuSerial "`n硬盘序列号: " diskSerial "`n设备码: " Hashed
+    Hashed := GenerateDeviceCode()
+    informatinon := "主板序列号: " mainBoardSerial "`n设备码: " Hashed
     A_Clipboard := informatinon
     MsgBox informatinon
     MsgBox("设备信息已复制到剪贴板")
