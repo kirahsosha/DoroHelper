@@ -18,7 +18,7 @@ CoordMode "Pixel", "Client"
 CoordMode "Mouse", "Client"
 ;region 设置常量
 try TraySetIcon "doro.ico"
-currentVersion := "v1.14.11"
+currentVersion := "v1.15.2"
 ; 判断拓展名
 SplitPath A_ScriptFullPath, , , &scriptExtension
 scriptExtension := StrLower(scriptExtension)
@@ -178,7 +178,7 @@ global g_numeric_settings := Map(
     "Version", currentVersion,          ; 版本号
     "UpdateChannels", "正式版",         ; 更新渠道
     "DownloadSource", "GitHub",         ; 下载源
-    "GroupDataSource", "Gitee",         ; 用户组数据源 (Gitee/GitHub/jsDelivr)
+    "GroupDataSource", "API",            ; 用户组数据源 (API/Gitee/GitHub/jsDelivr)
     "PreferredHttpRequest", "WinHttp.WinHttpRequest.5.1", ; HTTP 请求优先级
     "VerificationMethod", "V6",         ; 验证方式 (V6/V4)
     "UserID", "",                        ; 用户ID
@@ -446,9 +446,9 @@ cbSkipGroupCheck := AddCheckboxSetting(doroGui, "SkipUserGroupCheckForFreeUser",
 doroGui.Tips.SetTip(cbSkipGroupCheck, "勾选后，非会员用户启动时将跳过用户组检查以节省时间`nSkip user group check for free users to save startup time")
 g_settingPages["Settings"].Push(cbSkipGroupCheck)
 TextGroupDataSource := doroGui.Add("Text", "R1 +0x0100", "用户组数据源")
-doroGui.Tips.SetTip(TextGroupDataSource, "用户组数据源镜像`nGitee:国内源(推荐)|GitHub:官方源|jsDelivr:CDN加速`nUser Group Data Source Mirror`nGitee: Domestic (Recommended) | GitHub: Official | jsDelivr: CDN Accelerated")
+doroGui.Tips.SetTip(TextGroupDataSource, "用户组数据源镜像`nAPI:在线API(推荐)|Gitee:国内源|GitHub:官方源|jsDelivr:CDN加速`nUser Group Data Source Mirror`nAPI: Online (Recommended) | Gitee: Domestic | GitHub: Official | jsDelivr: CDN Accelerated")
 g_settingPages["Settings"].Push(TextGroupDataSource)
-cbGroupDataSource := doroGui.AddDropDownList("x+20 w100", ["Gitee", "GitHub", "jsDelivr"])
+cbGroupDataSource := doroGui.AddDropDownList("x+20 w100", ["API", "Gitee", "GitHub", "jsDelivr"])
 cbGroupDataSource.Text := g_numeric_settings["GroupDataSource"]
 cbGroupDataSource.OnEvent("Change", (Ctrl, Info) => g_numeric_settings["GroupDataSource"] := Ctrl.Text)
 g_settingPages["Settings"].Push(cbGroupDataSource)
@@ -2642,6 +2642,7 @@ UpdateSponsorPrice(userGroupInfo_param := unset) {
     global guiTier, guiDuration, guiStatusText, guiPreviewText
     global radDuration, edtAmount
     global g_MembershipLevels, g_PriceMap, LocaleName, g_DefaultRegionPriceData
+    global g_lastCalculatedTotalPay, g_lastCalculatedOrangeValue
     if (!IsObject(guiStatusText) || !guiStatusText.Hwnd || !IsObject(guiPreviewText) || !guiPreviewText.Hwnd) {
         return
     }
@@ -2732,6 +2733,8 @@ UpdateSponsorPrice(userGroupInfo_param := unset) {
     }
     ; 计算需付金额
     totalPay := newPurchaseValue * unitPrice
+    g_lastCalculatedTotalPay := totalPay
+    g_lastCalculatedOrangeValue := newPurchaseValue
     ; 估算新日期
     tempDailyCost := targetMonthlyCost / 30.0
     newExpDateStr := "----"
@@ -3776,7 +3779,7 @@ CheckUserGroup(forceUpdate := false) {
     g_numeric_settings["UserLevel"] := highestMembership["UserLevel"]
     highestMembership["IsPremium"] := g_numeric_settings["UserLevel"] > 0
     ; 获取当前使用的数据源
-    local currentSource := g_numeric_settings.Has("GroupDataSource") ? g_numeric_settings["GroupDataSource"] : "Gitee"
+    local currentSource := g_numeric_settings.Has("GroupDataSource") ? g_numeric_settings["GroupDataSource"] : "API"
     if (highestMembership["IsPremium"]) {
         local formattedExpiryDate := ""
         if (g_numeric_settings["UserLevel"] == 3) {
@@ -4132,7 +4135,7 @@ CheckUserGroupByHash(inputHash) {
             )
         }
         ; 获取当前使用的数据源
-        local currentSource := g_numeric_settings.Has("GroupDataSource") ? g_numeric_settings["GroupDataSource"] : "Gitee"
+        local currentSource := g_numeric_settings.Has("GroupDataSource") ? g_numeric_settings["GroupDataSource"] : "API"
         local resultMessage := "查询哈希值: " . inputHash . "`n"
         resultMessage .= "验证方式: " . matchMethod . "`n"
         resultMessage .= "数据源: " . currentSource . "`n"
