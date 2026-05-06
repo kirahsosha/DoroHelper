@@ -2453,165 +2453,161 @@ GetUserLocaleName() {
 }
 ;tag 赞助界面
 MsgSponsor(*) {
-    global guiSponsor
-    global g_PriceMap, g_DefaultRegionPriceData, g_MembershipLevels, LocaleName, g_numeric_settings
-    ; 检查用户组数据源是否为 API
-    if g_numeric_settings["GroupDataSource"] != "API" {
-        result := MsgBox("当前「用户组数据源」设置为 " . g_numeric_settings["GroupDataSource"] . "，建议改为「API」以获得更快的响应速度和更准确的会员信息。`n`n是否现在前往设置中修改？", "数据源提示", "YesNo Iconi")
-        if result = "Yes" {
-            ShowSetting("Settings")
-            return
-        }
-    }
-    if g_numeric_settings["UserGroup"] = "普通用户" {
-        MsgBox("我已知晓：`n1、会员功能与设备绑定，更换设备后需要重新赞助。`n2、赞助并不构成实际上的商业行为，如果遇到不可抗力因素，作者有权随时停止维护，最终解释权归作者所有`n3、赞助完后需要点击底部的「生成信息」然后按ctrl+v发送给作者登记。发送的将会是一段代码和赞助截图，而不是接下来的文本`n4、只需要在一个渠道发送录入后的文本，不要每个渠道都发一遍。`n5、录入会在24小时内完成，届时会在对应渠道发送「已录入」的信息，根据网络延迟，会员资格会在收到信息后的5分钟内生效。因此在规定时间内，请不要催促作者，谢谢。", "赞助说明", "iconi")
-    }
-    guiSponsor := Gui("+Resize +Owner" doroGui.Hwnd, "赞助")
-    guiSponsor.Opt("+DPIScale")
-    guiSponsor.Tips := GuiCtrlTips(guiSponsor)
-    guiSponsor.SetFont('s10', 'Microsoft YaHei UI')
-    ; 获取当前用户会员信息
-    userGroupInfo := CheckUserGroup()
-    isCheckedUser := (userGroupInfo["UserLevel"] > 0)
-    ; 创建标签页
-    tabControl := guiSponsor.Add("Tab3", "w420 h700", ["赞助", "查询", "V4升级"])
-    ; ========== 赞助标签页（统一入口） ==========
-    tabControl.UseTab("赞助")
-    Text1 := guiSponsor.Add("Text", "w400 +0x0100 Wrap", "现在 DoroHelper 的绝大部分维护和新功能的添加都是我在做，这耗费了我大量时间和精力，希望有条件的小伙伴们能支持一下")
-    ; 支付二维码逻辑
-    if (scriptExtension = "ahk") {
-        picUrl1 := "img\weixin.png"
-        picUrl2 := "img\alipay.png"
-        tempFile1 := picUrl1
-        tempFile2 := picUrl2
-    } else {
-        picUrl1 := "https://s1.imagehub.cc/images/2025/09/12/c3fd38a9b6ae2e677b4e2f411ebc49a8.jpg"
-        picUrl2 := "https://s1.imagehub.cc/images/2025/09/12/f69df12697d7bb2a98ef61108e46e787.jpg"
-        tempFile1 := A_Temp "\weixin.jpg"
-        tempFile2 := A_Temp "\alipay.jpg"
-        if (!FileExist(tempFile1)) {
-            try Download picUrl1, tempFile1
-        }
-        if (!FileExist(tempFile2)) {
-            try Download picUrl2, tempFile2
-        }
-    }
-    try {
-        pic_ctr_1 := guiSponsor.Add("Picture", "w190 h190 Section", tempFile1)
-        pic_ctr_2 := guiSponsor.Add("Picture", "x+10 yp w190 h190", tempFile2)
-    } catch {
-        guiSponsor.Add("Text", "w400 h200 Center", "无法加载赞助图片。")
-    }
-    btn1 := guiSponsor.Add("Button", "xs+100 w200", "无法使用以上支付方式?")
-    btn1.OnEvent("Click", (*) => Run("https://github.com/1204244136/DoroHelper?tab=readme-ov-file#%E6%94%AF%E6%8C%81%E5%92%8C%E9%BC%93%E5%8A%B1"))
-    ; 表格说明
-    LVZH := guiSponsor.Add("ListView", "xs w400 h100 Section", ["功能", "普通用户", "金Doro"])
-    LVZH.ModifyCol(1, 100)
-    LVZH.ModifyCol(2, 80)
-    LVZH.ModifyCol(3, 80)
-    LVZH.Add(, "基础功能", "✅️", "✅️")
-    LVZH.Add(, "去广告", "", "✅️")
-    LVZH.Add(, "轮换活动", "", "✅️")
-    LVZH.Add(, "定时/路径启动", "", "✅️")
-    LVZH.Add(, "其他最新功能", "", "✅️")
-    ; === UserID + 订单号 同行 ===
-    guiSponsor.Add("Text", "xs", "用户ID:")
-    savedUserID := g_numeric_settings.Has("UserID") ? g_numeric_settings["UserID"] : ""
-    sponsorUserIDEdit := guiSponsor.Add("Edit", "x+5 yp-3 w120", savedUserID != "" ? savedUserID : "")
-    if (savedUserID = "") {
-        SetEditPlaceholder(sponsorUserIDEdit, "字母开头3-20位")
-    }
-    guiSponsor.Add("Text", "x+10 yp+3", "订单号:")
-    sponsorOrderIDEdit := guiSponsor.Add("Edit", "x+5 yp-3 w135", "")
-    SetEditPlaceholder(sponsorOrderIDEdit, "28-32位订单号")
-    ; === 选择区域 ===
-    availableTiers := ["金Doro会员", "金Doro企业版"]
-    guiSponsor.Add("Text", "xs y+10", "类型:")
-    guiTier := guiSponsor.Add("DropDownList", "x+5 yp-3 w95 Choose1", availableTiers)
-    radDuration := guiSponsor.Add("Radio", "x+10 yp+3 Checked", "按时长")
-    guiDuration := guiSponsor.Add("DropDownList", "x+2 yp-3 w65 Choose1", ["1个月", "3个月", "6个月", "12个月"])
-    radAmount := guiSponsor.Add("Radio", "x+10 yp", "按金额")
-    edtAmount := guiSponsor.Add("Edit", "x+5 yp-3 w40 Number", "10")
-    ; === 左右分栏显示状态和预览 ===
-    guiSponsor.Add("GroupBox", "xs y+15 w195 h135", "当前状态")
-    guiStatusText := guiSponsor.Add("Text", "xp+10 yp+20 w175 h110", "读取中...")
-    guiSponsor.Add("GroupBox", "x+10 yp-20 w195 h135", "订单预览")
-    guiPreviewText := guiSponsor.Add("Text", "xp+10 yp+20 w175 h110", "计算中...")
-    ; 底部按钮：统一入口，新用户/续费用户共用
-    btn2 := guiSponsor.Add("Button", "xs y+15 w400 h40", "我已付款，复制赞助信息 (Ctrl+V 发送)")
-    btn2.SetFont("bold s11")
-    ; ========== 查询标签页 ==========
-    tabControl.UseTab("查询")
-    guiSponsor.Add("Text", "w400 +0x0100 Wrap", "查询会员信息，请输入用户ID：")
-    guiSponsor.Add("Text", "y+15", "用户ID：")
-    queryUserIDEdit := guiSponsor.Add("Edit", "y+5 w400", g_numeric_settings.Has("UserID") ? g_numeric_settings["UserID"] : "")
-    guiSponsor.Add("Text", "y+15 cBlue", "点击下方按钮查询会员信息。")
-    queryBtn := guiSponsor.Add("Button", "y+10 w400 h40", "查询会员信息")
-    queryBtn.SetFont("bold s11")
-    queryResultText := guiSponsor.Add("Text", "y+10 w400 h150", "")
-    ; ========== V4升级标签页 ==========
-    tabControl.UseTab("V4升级")
-    guiSponsor.Add("Text", "w400 +0x0100 Wrap Section", "V4用户升级入口。如果您是V4老用户，请在此提交V6设备信息以完成升级。新用户无需操作。")
-    guiSponsor.Add("Text", "xs y+15", "验证方式：")
-    cbVerificationMethod := guiSponsor.Add("DropDownList", "x+5 yp-3 w80", ["V6", "V4"])
-    cbVerificationMethod.Text := g_numeric_settings.Has("VerificationMethod") ? g_numeric_settings["VerificationMethod"] : "V6"
-    cbVerificationMethod.OnEvent("Change", (Ctrl, Info) => g_numeric_settings["VerificationMethod"] := Ctrl.Text)
-    guiSponsor.Add("Text", "xs y+15", "用户ID：")
-    manageUserIDEdit := guiSponsor.Add("Edit", "xs w400", g_numeric_settings.Has("UserID") ? g_numeric_settings["UserID"] : "")
-    guiSponsor.Add("Text", "xs y+15", "V6设备信息：")
-    ; 生成V6设备码并显示预览
-    deviceCodeV6 := { cpu_hash: "ERROR", uuid_hash: "ERROR", bios_hash: "ERROR", board_hash: "ERROR", disk_hash: "ERROR", guid_hash: "ERROR" }
-    try {
-        deviceCodeV6 := GenerateDeviceCodeV6()
-    } catch as e {
-        AddLog("生成V6设备码失败: " . e.Message, "Red")
-    }
-    guiSponsor.Add("Text", "xs y+5", "CPU哈希: " . SubStr(deviceCodeV6.cpu_hash, 1, 20) . "...")
-    guiSponsor.Add("Text", "xs y+5", "UUID哈希: " . SubStr(deviceCodeV6.uuid_hash, 1, 20) . "...")
-    guiSponsor.Add("Text", "xs y+5", "BIOS哈希: " . SubStr(deviceCodeV6.bios_hash, 1, 20) . "...")
-    guiSponsor.Add("Text", "xs y+5", "主板哈希: " . SubStr(deviceCodeV6.board_hash, 1, 20) . "...")
-    guiSponsor.Add("Text", "xs y+5", "硬盘哈希: " . SubStr(deviceCodeV6.disk_hash, 1, 20) . "...")
-    guiSponsor.Add("Text", "xs y+5", "GUID哈希: " . SubStr(deviceCodeV6.guid_hash, 1, 20) . "...")
-    upgradeBtn := guiSponsor.Add("Button", "xs y+15 w400 h40", "复制V6设备信息(JSON格式)")
-    upgradeBtn.SetFont("bold s11")
-    ; 结束标签页
-    tabControl.UseTab()
-    ; === 控件交互逻辑 ===
-    ToggleInputMode(GuiCtrlObj, Info) {
-        if (GuiCtrlObj.Hwnd == radDuration.Hwnd) {
-            radAmount.Value := 0
-        }
-        else if (GuiCtrlObj.Hwnd == radAmount.Hwnd) {
-            if g_numeric_settings["UserLevel"] < 3 {
-                MsgBox("非金会员无法使用按金额赞助，请选择按时长赞助方式以修改会员。")
-                radAmount.Value := 0
-                return
-            }
-            MsgBox("你实际应该支付的金额应为下方「订单预览」中的金额")
-            radDuration.Value := 0
-        }
-        isDurationMode := radDuration.Value
-        guiTier.Enabled := isDurationMode
-        guiDuration.Enabled := isDurationMode
-        edtAmount.Enabled := !isDurationMode
-        ; UpdateSponsorPrice(userGroupInfo)
-    }
-    radDuration.OnEvent("Click", ToggleInputMode)
-    radAmount.OnEvent("Click", ToggleInputMode)
-    ; guiTier.OnEvent("Change", (Ctrl, Info) => UpdateSponsorPrice(userGroupInfo))
-    ; guiDuration.OnEvent("Change", (Ctrl, Info) => UpdateSponsorPrice(userGroupInfo))
-    ; edtAmount.OnEvent("Change", (Ctrl, Info) => UpdateSponsorPrice(userGroupInfo))
-    btn2.OnEvent("Click", CalculateSponsorInfoUnified.Bind(sponsorUserIDEdit, sponsorOrderIDEdit))
-    queryBtn.OnEvent("Click", QueryMembershipWithValidation.Bind(queryUserIDEdit, queryResultText))
-    upgradeBtn.OnEvent("Click", CopyV6WithValidationForSponsor.Bind(manageUserIDEdit, deviceCodeV6))
-    ; 初始化状态
-    ToggleInputMode(radDuration, "")
-    guiSponsor.Show("AutoSize Center")
+    ; global guiSponsor
+    ; global g_PriceMap, g_DefaultRegionPriceData, g_MembershipLevels, LocaleName, g_numeric_settings
+    ; ; 检查用户组数据源是否为 API
+    ; if g_numeric_settings["GroupDataSource"] != "API" {
+    ;     result := MsgBox("当前「用户组数据源」设置为 " . g_numeric_settings["GroupDataSource"] . "，建议改为「API」以获得更快的响应速度和更准确的会员信息。`n`n是否现在前往设置中修改？", "数据源提示", "YesNo Iconi")
+    ;     if result = "Yes" {
+    ;         ShowSetting("Settings")
+    ;         return
+    ;     }
+    ; }
+    ; if g_numeric_settings["UserGroup"] = "普通用户" {
+    ;     MsgBox("我已知晓：`n1、会员功能与设备绑定，更换设备后需要重新赞助。`n2、赞助并不构成实际上的商业行为，如果遇到不可抗力因素，作者有权随时停止维护，最终解释权归作者所有`n3、赞助完后需要点击底部的「生成信息」然后按ctrl+v发送给作者登记。发送的将会是一段代码和赞助截图，而不是接下来的文本`n4、只需要在一个渠道发送录入后的文本，不要每个渠道都发一遍。`n5、录入会在24小时内完成，届时会在对应渠道发送「已录入」的信息，根据网络延迟，会员资格会在收到信息后的5分钟内生效。因此在规定时间内，请不要催促作者，谢谢。", "赞助说明", "iconi")
+    ; }
+    ; guiSponsor := Gui("+Resize +Owner" doroGui.Hwnd, "赞助")
+    ; guiSponsor.Opt("+DPIScale")
+    ; guiSponsor.Tips := GuiCtrlTips(guiSponsor)
+    ; guiSponsor.SetFont('s10', 'Microsoft YaHei UI')
+    ; ; 获取当前用户会员信息
+    ; ; ========== 赞助内容（精简版） ==========
+    ; guiSponsor.Add("Text", "w400 +0x0100 Wrap Center", "感谢您对 DoroHelper 的支持！`n您的支持是我持续维护的动力")
+    ; guiSponsor.Add("Text", "w400 h10")
+    ; ; 主按钮
+    ; btnOnlineSponsor := guiSponsor.Add("Button", "xs w400 h40", "网页赞助")
+    ; btnOnlineSponsor.SetFont("bold s12")
+    ; guiSponsor.Add("Text", "w400 h10")
+    ; ; 次要按钮
+    ; btnUpgradeV6 := guiSponsor.Add("Button", "xs w128 h30", "V4升级V6")
+    ; btnUpgradeV6.SetFont("bold s10")
+    ; btnQueryOnline := guiSponsor.Add("Button", "x+3 yp w128 h30", "查询会员")
+    ; btnQueryOnline.SetFont("bold s10")
+    ; btnRedeemCode := guiSponsor.Add("Button", "x+3 yp w128 h30", "兑换福利码")
+    ; btnRedeemCode.SetFont("bold s10")
+    ; ; === 控件交互逻辑 ===
+    ; btnOnlineSponsor.OnEvent("Click", OpenOnlineSponsor)
+    ; btnUpgradeV6.OnEvent("Click", UpgradeV6Online)
+    ; btnQueryOnline.OnEvent("Click", (*) => Run("https://doropay.top/?tab=query"))
+    ; btnRedeemCode.OnEvent("Click", OpenRedeemPage)
+    ; guiSponsor.Show("AutoSize Center")
 }
-;tag 设置Edit控件placeholder提示文字
+;tag 在线赞助（打开浏览器自助录入页面）
+OpenOnlineSponsor(*) {
+    ; global g_numeric_settings
+    ; ; 构建URL，只传设备信息和用户ID
+    ; baseURL := "https://doropay.top"
+    ; params := ""
+    ; ; 用户ID（可选预填）
+    ; userID := g_numeric_settings.Has("UserID") ? g_numeric_settings["UserID"] : ""
+    ; if (userID != "")
+    ;     params .= "&uid=" . userID
+    ; ; V6设备码（必须传）
+    ; try {
+    ;     deviceCodeV6 := GenerateDeviceCodeV6Safe()
+    ;     params .= "&cpu=" . deviceCodeV6.cpu_hash
+    ;     params .= "&uuid=" . deviceCodeV6.uuid_hash
+    ;     params .= "&bios=" . deviceCodeV6.bios_hash
+    ;     params .= "&board=" . deviceCodeV6.board_hash
+    ;     params .= "&disk=" . deviceCodeV6.disk_hash
+    ;     params .= "&guid=" . deviceCodeV6.guid_hash
+    ; } catch {
+    ;     ; 生成失败时跳过，用户在网页手动填
+    ; }
+    ; ; 拼接URL
+    ; if (params != "")
+    ;     fullURL := baseURL . "?" . SubStr(params, 2)  ; 去掉开头的 &
+    ; else
+    ;     fullURL := baseURL
+    ; Run(fullURL)
+}
+;tag V4升级V6（在线录入，保留当前余额）
+UpgradeV6Online(*) {
+    ; global g_numeric_settings
+    ; ; 先查询V4会员信息，确认是会员
+    ; AddLog("正在查询V4会员信息……", "Blue")
+    ; v4Hash := GenerateDeviceCode()
+    ; v4Result := QueryV4MemberByHash(v4Hash)
+    ; if (!v4Result.found) {
+    ;     MsgBox("未查询到您的V4会员信息，无法进行升级。`n`n请确认您已经是V4会员后再试。", "升级失败", "Icon!")
+    ;     return
+    ; }
+    ; AddLog("查询到V4会员，余额: " . v4Result.account_value . " ORANGE", "Green")
+    ; ; 构建URL
+    ; baseURL := "https://doropay.top"
+    ; params := "tab=upgrade"
+    ; ; 传递V4哈希（服务器根据此哈希查找余额并继承到V6）
+    ; params .= "&v4_hash=" . v4Hash
+    ; ; 用户ID（可选预填）
+    ; userID := g_numeric_settings.Has("UserID") ? g_numeric_settings["UserID"] : ""
+    ; if (userID != "")
+    ;     params .= "&uid=" . userID
+    ; ; V6设备码
+    ; try {
+    ;     deviceCodeV6 := GenerateDeviceCodeV6Safe()
+    ;     params .= "&cpu=" . deviceCodeV6.cpu_hash
+    ;     params .= "&uuid=" . deviceCodeV6.uuid_hash
+    ;     params .= "&bios=" . deviceCodeV6.bios_hash
+    ;     params .= "&board=" . deviceCodeV6.board_hash
+    ;     params .= "&disk=" . deviceCodeV6.disk_hash
+    ;     params .= "&guid=" . deviceCodeV6.guid_hash
+    ; } catch as e {
+    ;     MsgBox("V6设备码生成失败: " . e.Message, "错误", "Iconx")
+    ;     return
+    ; }
+    ; fullURL := baseURL . "?" . params
+    ; Run(fullURL)
+}
+;tag 根据V4哈希查询会员信息
+QueryV4MemberByHash(v4Hash) {
+    ; try {
+    ;     apiUrl := "https://doropay.top/api/members/v4"
+    ;     jsonContent := DownloadUrlContent(apiUrl)
+    ;     if (jsonContent = "")
+    ;         return { found: false, account_value: "0" }
+    ;     members := Json.Load(&jsonContent)
+    ;     if (!IsObject(members))
+    ;         return { found: false, account_value: "0" }
+    ;     for member in members {
+    ;         if (member.Has("hash") && member.Get("hash") = v4Hash) {
+    ;             val := member.Has("account_value") ? member.Get("account_value") : "0"
+    ;             if (Float(val) > 0)
+    ;                 return { found: true, account_value: val }
+    ;         }
+    ;     }
+    ;     return { found: false, account_value: "0" }
+    ; } catch as e {
+    ;     AddLog("查询V4会员失败: " . e.Message, "Red")
+    ;     return { found: false, account_value: "0" }
+    ; }
+}
+;tag 兑换福利码（打开兑换页面，隐性传入设备码）
+OpenRedeemPage(*) {
+    ; global g_numeric_settings
+    ; baseURL := "https://doropay.top"
+    ; params := "&tab=redeem"
+    ; ; 用户ID
+    ; userID := g_numeric_settings.Has("UserID") ? g_numeric_settings["UserID"] : ""
+    ; if (userID != "")
+    ;     params .= "&uid=" . userID
+    ; ; V6设备码（隐性传入，用于非会员自动创建记录）
+    ; try {
+    ;     deviceCodeV6 := GenerateDeviceCodeV6Safe()
+    ;     params .= "&cpu=" . deviceCodeV6.cpu_hash
+    ;     params .= "&uuid=" . deviceCodeV6.uuid_hash
+    ;     params .= "&bios=" . deviceCodeV6.bios_hash
+    ;     params .= "&board=" . deviceCodeV6.board_hash
+    ;     params .= "&disk=" . deviceCodeV6.disk_hash
+    ;     params .= "&guid=" . deviceCodeV6.guid_hash
+    ; } catch {
+    ;     ; 生成失败时跳过，用户在网页手动填
+    ; }
+    ; fullURL := baseURL . "?" . SubStr(params, 2)
+    ; Run(fullURL)
+}
 SetEditPlaceholder(editCtrl, placeholderText) {
-    Static EM_SETCUEBANNER := 0x1501
-    DllCall("SendMessage", "Ptr", editCtrl.Hwnd, "UInt", EM_SETCUEBANNER, "Ptr", 0, "WStr", placeholderText, "Ptr")
+    ; static EM_SETCUEBANNER := 0x1501
+    ; DllCall("SendMessage", "Ptr", editCtrl.Hwnd, "UInt", EM_SETCUEBANNER, "Ptr", 0, "WStr", placeholderText, "Ptr")
 }
 ;tag 获取实时汇率
 GetExchangeRate(fromCurrency, toCurrency) {
@@ -2673,400 +2669,6 @@ FormatOrangeValueWithLocalCurrency(orangeAmount, unitPrice, currencyName, usdToC
     return formatted
 }
 ; 根据选择更新价格显示
-UpdateSponsorPrice(userGroupInfo_param := unset) {
-    ; global guiTier, guiDuration, guiStatusText, guiPreviewText
-    ; global radDuration, edtAmount
-    ; global g_MembershipLevels, g_PriceMap, LocaleName, g_DefaultRegionPriceData
-    ; global g_lastCalculatedTotalPay, g_lastCalculatedOrangeValue
-    ; if (!IsObject(guiStatusText) || !guiStatusText.Hwnd || !IsObject(guiPreviewText) || !guiPreviewText.Hwnd) {
-    ;     return
-    ; }
-    ; ; 获取价格信息
-    ; priceData := g_PriceMap.Get(LocaleName, g_DefaultRegionPriceData)
-    ; unitPrice := priceData.Unitprice
-    ; currencyName := priceData.Currency
-    ; ; 获取当前用户状态
-    ; if (IsObject(userGroupInfo_param)) {
-    ;     userGroupInfo := userGroupInfo_param
-    ; } else {
-    ;     userGroupInfo := CheckUserGroup()
-    ; }
-    ; currentType := userGroupInfo["MembershipType"]
-    ; currentRemaining := userGroupInfo["RemainingValue"]
-    ; currentExpDate := userGroupInfo["VirtualExpiryDate"]
-    ; currentRegDate := userGroupInfo["LastActiveDate"]
-    ; currentLevel := userGroupInfo["UserLevel"]
-    ; histValue := userGroupInfo["HistoricalAccountValue"]
-    ; ; 汇率计算
-    ; local usdToCnyRate := 1.0
-    ; if (currencyName = "USD") {
-    ;     usdToCnyRate := GetExchangeRate("USD", "CNY")
-    ; }
-    ; ; --- 1. 左侧：当前状态 ---
-    ; statusStr := ""
-    ; if (currentLevel > 0 && histValue > 0.001) {
-    ;     statusStr .= "类型: " . currentType . "`n"
-    ;     regDateStr := (currentRegDate != "19991231") ? SubStr(currentRegDate, 1, 4) "-" SubStr(currentRegDate, 5, 2) "-" SubStr(currentRegDate, 7, 2) : "N/A"
-    ;     statusStr .= "注册: " . regDateStr . "`n"
-    ;     statusStr .= "余额: " . Format("{:0.1f}", currentRemaining) . " ORANGE`n"
-    ;     expDateStr := SubStr(currentExpDate, 1, 4) "-" SubStr(currentExpDate, 5, 2) "-" SubStr(currentExpDate, 7, 2)
-    ;     statusStr .= "过期: " . expDateStr
-    ; } else {
-    ;     statusStr := "类型: 普通用户`n`n暂无会员权益`n或额度已耗尽"
-    ; }
-    ; guiStatusText.Text := statusStr
-    ; ; --- 2. 右侧：订单预览 ---
-    ; newPurchaseValue := 0.0
-    ; actionStr := ""
-    ; isDateReset := false
-    ; targetUserLevel := 0
-    ; targetMonthlyCost := 0
-    ; finalValue := 0.0
-    ; ; 判断当前模式
-    ; if (radDuration.Value) { ; === 按时长模式 ===
-    ;     tierSelected := guiTier.Text
-    ;     durationSelected := guiDuration.Text
-    ;     if (tierSelected = "" || durationSelected = "") {
-    ;         guiPreviewText.Text := "请选择会员类型"
-    ;         return
-    ;     }
-    ;     targetMonths := Integer(StrReplace(durationSelected, "个月"))
-    ;     targetLevelInfo := g_MembershipLevels.Get(tierSelected)
-    ;     targetMonthlyCost := targetLevelInfo.monthlyCost
-    ;     targetUserLevel := targetLevelInfo.userLevel
-    ;     newPurchaseValue := targetMonthlyCost * targetMonths
-    ;     if (currentLevel == 0 || currentRemaining <= 0.001) { ; 新购
-    ;         actionStr := "开通会员"
-    ;         finalValue := newPurchaseValue
-    ;         isDateReset := true
-    ;     } else if (currentLevel == targetUserLevel) { ; 续费
-    ;         actionStr := "会员续费"
-    ;         finalValue := currentRemaining + newPurchaseValue
-    ;         isDateReset := false
-    ;     } else { ; 变动
-    ;         actionStr := (currentLevel < targetUserLevel) ? "升级套餐" : "降级套餐"
-    ;         finalValue := currentRemaining + newPurchaseValue
-    ;         isDateReset := true
-    ;     }
-    ; } else { ; === 按金额模式 ===
-    ;     rawAmount := edtAmount.Value
-    ;     if (!IsNumber(rawAmount) || rawAmount == "") {
-    ;         newPurchaseValue := 0
-    ;     } else {
-    ;         newPurchaseValue := Float(rawAmount)
-    ;     }
-    ;     actionStr := "余额充值"
-    ;     finalValue := currentRemaining + newPurchaseValue
-    ;     isDateReset := false
-    ;     ; 只有当前已经是会员，才能估算剩余天数
-    ;     if (currentLevel > 0) {
-    ;         targetLevelInfo := g_MembershipLevels.Get(currentType)
-    ;         targetMonthlyCost := targetLevelInfo.monthlyCost
-    ;     } else {
-    ;         targetMonthlyCost := 0
-    ;     }
-    ; }
-    ; ; 计算需付金额
-    ; totalPay := newPurchaseValue * unitPrice
-    ; g_lastCalculatedTotalPay := totalPay
-    ; g_lastCalculatedOrangeValue := newPurchaseValue
-    ; ; 估算新日期
-    ; tempDailyCost := targetMonthlyCost / 30.0
-    ; newExpDateStr := "----"
-    ; if (finalValue > 0 && tempDailyCost > 0) {
-    ;     daysLeft := Floor(finalValue / tempDailyCost)
-    ;     rawNewDate := DateAdd(A_Now, daysLeft, "Days")
-    ;     newExpDateStr := SubStr(rawNewDate, 1, 4) "-" SubStr(rawNewDate, 5, 2) "-" SubStr(rawNewDate, 7, 2)
-    ; } else if (finalValue > 0 && tempDailyCost == 0) {
-    ;     newExpDateStr := "需先开通"
-    ; }
-    ; ; 构建预览文本
-    ; previewStr := "操作: " . actionStr . "`n"
-    ; priceStr := Format("{:0.1f}", totalPay) . " " . currencyName
-    ; if (currencyName = "USD") {
-    ;     priceStr .= " (约" . Round(totalPay * usdToCnyRate) . " CNY)"
-    ; }
-    ; previewStr .= "需付: " . priceStr . "`n"
-    ; previewStr .= "-----------------------`n"
-    ; previewStr .= "充值额: " . Format("{:0.1f}", newPurchaseValue) . " ORANGE`n"
-    ; previewStr .= "新余额: " . Format("{:0.1f}", finalValue) . " ORANGE`n"
-    ; previewStr .= "新过期: " . newExpDateStr
-    ; if (isDateReset && currentLevel > 0) {
-    ;     previewStr .= "`n(注意: 注册日将重置)"
-    ; }
-    ; guiPreviewText.Text := previewStr
-}
-;tag 统一赞助信息生成（新用户/老用户共用入口）
-CalculateSponsorInfoUnified(userIDEdit, orderIDEdit, thisGuiButton, info) {
-    global guiTier, guiDuration, guiSponsor
-    global radDuration, edtAmount
-    global g_MembershipLevels, g_PriceMap, LocaleName
-    global g_numeric_settings
-    ; === 订单号验证（所有用户必填）===
-    orderID := orderIDEdit.Value
-    if (orderID = "") {
-        MsgBox("请填写支付订单号。`n`n微信：我→钱包→账单→复制订单号`n支付宝：我的→账单→复制订单号", "信息不完整", "Icon!")
-        return
-    }
-    ; 后门：DORO跳过格式验证（测试用）
-    isTestMode := (orderID = "DORO")
-    if (!isTestMode && !RegExMatch(orderID, "^[0-9]{28,32}$")) {
-        MsgBox("订单号格式不正确！`n`n微信订单号：28位数字`n支付宝订单号：28-32位数字", "验证失败", "Icon!")
-        return
-    }
-    ; === UserID 验证 ===
-    userID := userIDEdit.Value
-    if (userID != "") {
-        validation := ValidateUserID(userID)
-        if (!validation.valid) {
-            MsgBox(validation.reason, "用户ID格式错误", "Icon!")
-            return
-        }
-        g_numeric_settings["UserID"] := userID
-        WriteSettings()
-    }
-    ; 获取当前状态
-    currentUserInfo := CheckUserGroup(true)
-    currentLevel := currentUserInfo["UserLevel"]
-    isCheckedUser := (currentLevel > 0 && currentUserInfo["RemainingValue"] > 0.001)
-    ; --- 老用户：走原有 CalculateSponsorInfo 逻辑 ---
-    if (isCheckedUser) {
-        CalculateSponsorInfo(thisGuiButton, info, orderID)
-        return
-    }
-    ; --- 新用户/未录入用户：需要额外验证 UserID ---
-    if (userID = "") {
-        MsgBox("新用户请填写用户ID（3-20位，字母开头）。", "信息不完整", "Icon!")
-        return
-    }
-    ; 获取选择的会员类型和时长
-    tierSelected := "金Doro会员"
-    durationSelected := "999"
-    targetMonths := 0
-    newPurchaseValue := 0.0
-    radDuration := 999
-    edtAmount := 999
-    if (radDuration.Value) {
-        targetMonthsText := StrReplace(durationSelected, "个月")
-        if (!IsNumber(targetMonthsText)) {
-            MsgBox("请选择有效的赞助时长。", "赞助信息错误", "iconx")
-            return
-        }
-        targetMonths := Integer(targetMonthsText)
-        targetLevelInfo := g_MembershipLevels.Get(tierSelected)
-        if (!IsObject(targetLevelInfo)) {
-            MsgBox("错误：无效的会员类型数据。", "赞助信息错误", "iconx")
-            return
-        }
-        newPurchaseValue := targetLevelInfo.monthlyCost * targetMonths
-    } else {
-        rawAmount := edtAmount.Value
-        if (!IsNumber(rawAmount) || Float(rawAmount) <= 0) {
-            MsgBox("请输入有效的赞助金额 (大于0)。", "赞助信息错误", "iconx")
-            return
-        }
-        newPurchaseValue := Float(rawAmount)
-    }
-    ; 生成V6设备码
-    deviceCodeV6 := { cpu_hash: "ERROR", uuid_hash: "ERROR", bios_hash: "ERROR", board_hash: "ERROR", disk_hash: "ERROR", guid_hash: "ERROR" }
-    try {
-        deviceCodeV6 := GenerateDeviceCodeV6()
-    } catch as e {
-        AddLog("生成V6设备码失败: " . e.Message, "Red")
-    }
-    ; 生成JSON格式设备信息
-    json := "  {`n"
-    json .= "    `"user_id`": `"" . userID . "`",`n"
-    json .= "    `"cpu_hash`": `"" . deviceCodeV6.cpu_hash . "`",`n"
-    json .= "    `"uuid_hash`": `"" . deviceCodeV6.uuid_hash . "`",`n"
-    json .= "    `"bios_hash`": `"" . deviceCodeV6.bios_hash . "`",`n"
-    json .= "    `"board_hash`": `"" . deviceCodeV6.board_hash . "`",`n"
-    json .= "    `"disk_hash`": `"" . deviceCodeV6.disk_hash . "`",`n"
-    json .= "    `"guid_hash`": `"" . deviceCodeV6.guid_hash . "`",`n"
-    json .= "    `"tier`": `"" . tierSelected . "`",`n"
-    json .= "    `"account_value`": `"" . Format("{:0.2f}", newPurchaseValue) . "`",`n"
-    json .= "    `"registration_date`": `"" . FormatTime(A_Now, "yyyyMMdd") . "`"`n"
-    json .= "  },"
-    ; 生成完整申请信息
-    priceData := g_PriceMap.Get(LocaleName, g_DefaultRegionPriceData)
-    unitPrice := priceData.Unitprice
-    currencyName := priceData.Currency
-    totalPay := newPurchaseValue * unitPrice
-    applyInfo := "=== DoroHelper 新用户赞助 ===`n`n"
-    applyInfo .= "用户ID: " . userID . "`n"
-    applyInfo .= "会员等级: " . tierSelected . "`n"
-    if (targetMonths > 0) {
-        applyInfo .= "时长: " . targetMonths . "个月`n"
-    }
-    applyInfo .= "金额: " . Format("{:0.1f}", totalPay) . " " . currencyName . "`n"
-    applyInfo .= "订单号: " . orderID . "`n`n"
-    applyInfo .= "=== 设备信息（JSON格式）===`n`n"
-    applyInfo .= json
-    A_Clipboard := applyInfo
-    MsgBox("赞助信息已生成并复制到剪贴板，请在对应页面按ctrl+v粘贴，然后连同付款截图发给我`n`n状态: 新用户申请`n会员类型: " . tierSelected . "`n需付: " . Format("{:0.1f}", totalPay) . " " . currencyName . "`n`n注意这里的文本不是你应该复制的内容，剪贴板的才是`n`nQQ群: 584275905`nQQ邮箱: 1204244136@qq.com`n海外邮箱: zhi.11@foxmail.com", "赞助信息已复制！", "iconi")
-    guiSponsor.Destroy()
-}
-; 计算并生成赞助信息
-CalculateSponsorInfo(thisGuiButton, info, orderID := "") {
-    global guiTier, guiDuration, guiSponsor
-    global radDuration, edtAmount
-    global g_MembershipLevels, g_PriceMap, LocaleName
-    global g_numeric_settings
-    today := A_YYYY A_MM A_DD
-    ; 统一使用V6设备码
-    deviceCodeV6 := { cpu_hash: "ERROR", uuid_hash: "ERROR", bios_hash: "ERROR", board_hash: "ERROR", disk_hash: "ERROR", guid_hash: "ERROR" }
-    try {
-        deviceCodeV6 := GenerateDeviceCodeV6()
-    } catch as e {
-        AddLog("生成V6设备码失败: " . e.Message, "Red")
-    }
-    ; 获取用户当前信息
-    currentUserInfo := CheckUserGroup(true)
-    currentLevel := currentUserInfo["UserLevel"]
-    currentRemainingValue := currentUserInfo["RemainingValue"]
-    currentHistoricalValue := currentUserInfo["HistoricalAccountValue"]
-    currentRegistrationDate := currentUserInfo["LastActiveDate"]
-    currentTierType := currentUserInfo["MembershipType"]
-    newPurchaseValue := 0.0
-    finalTier := ""
-    targetUserLevel := 0
-    ; === 核心分支：按时长 vs 按金额 ===
-    if (radDuration.Value) { ; 选中按时长
-        tierSelected := "金Doro会员"
-        durationSelected := "999"
-        if (tierSelected == "管理员") {
-            MsgBox("管理员等级不能通过此方式赞助。", "赞助无效", "iconx")
-            return
-        }
-        targetMonthsText := StrReplace(durationSelected, "个月")
-        if (!IsNumber(targetMonthsText)) {
-            MsgBox("请选择有效的赞助时长。", "赞助信息错误", "iconx")
-            return
-        }
-        targetMonths := Integer(targetMonthsText)
-        targetLevelInfo := g_MembershipLevels.Get(tierSelected)
-        if (!IsObject(targetLevelInfo)) {
-            MsgBox("错误：无效的会员类型数据。", "赞助信息错误", "iconx")
-            return
-        }
-        finalTier := tierSelected
-        targetUserLevel := targetLevelInfo.userLevel
-        newPurchaseValue := targetLevelInfo.monthlyCost * targetMonths
-    } else { ; 选中按金额
-        rawAmount := edtAmount.Value
-        if (!IsNumber(rawAmount) || Float(rawAmount) <= 0) {
-            MsgBox("请输入有效的赞助金额 (大于0)。", "赞助信息错误", "iconx")
-            return
-        }
-        newPurchaseValue := Float(rawAmount)
-        ; 如果按金额充值，保持当前等级
-        if (currentLevel > 0) {
-            finalTier := currentTierType
-            targetUserLevel := currentLevel
-        } else {
-            ; 普通用户仅充值余额
-            finalTier := "普通用户"
-            targetUserLevel := 0
-        }
-    }
-    finalAccountValue := 0.0
-    finalLastActiveDate := today
-    UserStatus := ""
-    ; === 计算最终状态 ===
-    ; 1. 新用户 或 已过期
-    if (currentLevel == 0 || currentRemainingValue <= 0.001) {
-        if (currentHistoricalValue <= 0.001) {
-            UserStatus := "新用户"
-        } else {
-            UserStatus := "重新开通/充值"
-        }
-        finalAccountValue := newPurchaseValue
-        finalLastActiveDate := today
-        if (!radDuration.Value && finalTier == "普通用户") {
-            UserStatus := "账户充值(未开通会员)"
-        }
-    }
-    ; 2. 老用户续费/充值
-    else if (currentLevel == targetUserLevel) {
-        UserStatus := radDuration.Value ? "老用户续费" : "余额充值"
-        finalAccountValue := currentHistoricalValue + newPurchaseValue
-        finalLastActiveDate := (currentRegistrationDate != "19991231") ? currentRegistrationDate : today
-    }
-    ; 3. 变更套餐 (仅按时长模式触发)
-    else {
-        UserStatus := (currentLevel < targetUserLevel) ? "用户组升级" : "用户组降级"
-        finalAccountValue := currentRemainingValue + newPurchaseValue
-        finalLastActiveDate := today
-    }
-    ; 计算显示用的有效期
-    tempMonthlyCost := 0
-    if (g_MembershipLevels.Has(finalTier)) {
-        tempMonthlyCost := g_MembershipLevels.Get(finalTier).monthlyCost
-    }
-    tempDailyCost := tempMonthlyCost / 30.0
-    ; 计算实际剩余额度 (与GUI预览的新余额一致)
-    displayRemainingValue := 0.0
-    if ((UserStatus == "老用户续费" || UserStatus == "余额充值") && finalLastActiveDate != today) {
-        daysPassed := DateDiff(today, finalLastActiveDate, "Days")
-        consumedValue := daysPassed * tempDailyCost
-        displayRemainingValue := finalAccountValue - consumedValue
-    } else {
-        displayRemainingValue := finalAccountValue
-    }
-    ; 计算预计到期日
-    tempVirtualExpiryDate := "19991231"
-    if (displayRemainingValue > 0 && tempDailyCost > 0) {
-        tempDaysLeft := Floor(displayRemainingValue / tempDailyCost)
-        tempVirtualExpiryDate := SubStr(DateAdd(A_Now, tempDaysLeft, "Days"), 1, 8)
-    } else if (displayRemainingValue > 0 && tempDailyCost == 0) {
-        tempVirtualExpiryDate := "99991231"
-    }
-    newExpiryDateFormatted := SubStr(tempVirtualExpiryDate, 1, 4) . "-" . SubStr(tempVirtualExpiryDate, 5, 2) . "-" . SubStr(tempVirtualExpiryDate, 7, 2)
-    ; 格式化生效日期 (解决问题2)
-    finalRegistrationDateFormatted := SubStr(finalLastActiveDate, 1, 4) . "-" . SubStr(finalLastActiveDate, 5, 2) . "-" . SubStr(finalLastActiveDate, 7, 2)
-    ; 生成 V6 格式 JSON
-    jsonLines := []
-    jsonLines.Push("  {")
-    jsonLines.Push("    `"cpu_hash`": `"" . deviceCodeV6.cpu_hash . "`",")
-    jsonLines.Push("    `"uuid_hash`": `"" . deviceCodeV6.uuid_hash . "`",")
-    jsonLines.Push("    `"bios_hash`": `"" . deviceCodeV6.bios_hash . "`",")
-    jsonLines.Push("    `"board_hash`": `"" . deviceCodeV6.board_hash . "`",")
-    jsonLines.Push("    `"disk_hash`": `"" . deviceCodeV6.disk_hash . "`",")
-    jsonLines.Push("    `"guid_hash`": `"" . deviceCodeV6.guid_hash . "`",")
-    jsonLines.Push("    `"tier`": `"" . finalTier . "`",")
-    jsonLines.Push("    `"account_value`": `"" . Format("{:0.2f}", finalAccountValue) . "`",")
-    jsonLines.Push("    `"registration_date`": `"" . finalLastActiveDate . "`"")
-    jsonLines.Push("  },")
-    ; 生成完整赞助信息
-    sponsorInfo := UserStatus . " (设备信息)`n"
-    sponsorInfo .= "(请将这段文字替换成您的付款截图，邮件的图片请以附件形式发送)`n"
-    if (orderID != "") {
-        sponsorInfo .= "订单号: " . orderID . "`n"
-    }
-    sponsorInfo .= "V6设备码`n"
-    for line in jsonLines {
-        sponsorInfo .= line . "`n"
-    }
-    A_Clipboard := sponsorInfo
-    ; 修正 msgStr 中的额度和日期格式 (解决问题1和问题2)
-    msgStr := "赞助信息已生成并复制到剪贴板，请在对应页面按ctrl+v粘贴，然后连同付款记录发给我`n"
-        . "状态: " . UserStatus . "`n"
-        . "用户码版本: V6`n"
-        . "您将获得的会员类型: " . finalTier . "`n"
-        . "新会员总额度: " . Format("{:0.2f}", displayRemainingValue) . " ORANGE`n" ; 使用实际剩余额度
-    if (finalTier != "普通用户") {
-        msgStr .= "生效日期: " . finalRegistrationDateFormatted . "`n" ; 使用格式化后的日期
-        msgStr .= "预计有效期至: " . newExpiryDateFormatted . "`n`n"
-    } else {
-        msgStr .= "注意：您目前是普通用户，请在“按时长”中选择套餐以激活会员功能。`n`n"
-    }
-    msgStr .= "注意这里的文本不是你应该复制的内容，剪贴板的才是`n"
-        . "QQ群: 584275905`n"
-        . "QQ邮箱: 1204244136@qq.com`n"
-        . "海外邮箱: zhi.11@foxmail.com"
-    MsgBox(msgStr, "赞助信息已复制！", "iconi")
-    guiSponsor.Destroy()
-}
 ;tag 下载指定URL的内容
 DownloadUrlContent(url) {
     ; 这个函数是获取纯文本内容，而不是下载文件到磁盘。
@@ -3414,6 +3016,47 @@ GenerateDeviceCodeV6() {
         guid_hash: HashSHA256(machineGuid)
     }
 }
+;tag 生成V6设备码（带容错）
+GenerateDeviceCodeV6Safe() {
+    local deviceCode := { cpu_hash: "ERROR", uuid_hash: "ERROR", bios_hash: "ERROR", board_hash: "ERROR", disk_hash: "ERROR", guid_hash: "ERROR" }
+    try {
+        deviceCode := GenerateDeviceCodeV6()
+    } catch as e {
+        AddLog("生成V6设备码失败: " . e.Message, "Red")
+    }
+    return deviceCode
+}
+;tag 格式化V6设备码为JSON字符串
+FormatDeviceCodeV6JSON(deviceCode, tier, accountValue, userID := "", registrationDate := "") {
+    if (registrationDate == "")
+        registrationDate := FormatTime(A_Now, "yyyyMMdd")
+    json := "  {`n"
+    if (userID != "") {
+        json .= "    `"user_id`": `"" . userID . "`",`n"
+    }
+    json .= "    `"cpu_hash`": `"" . deviceCode.cpu_hash . "`",`n"
+    json .= "    `"uuid_hash`": `"" . deviceCode.uuid_hash . "`",`n"
+    json .= "    `"bios_hash`": `"" . deviceCode.bios_hash . "`",`n"
+    json .= "    `"board_hash`": `"" . deviceCode.board_hash . "`",`n"
+    json .= "    `"disk_hash`": `"" . deviceCode.disk_hash . "`",`n"
+    json .= "    `"guid_hash`": `"" . deviceCode.guid_hash . "`",`n"
+    json .= "    `"tier`": `"" . tier . "`",`n"
+    json .= "    `"account_value`": `"" . Format("{:0.2f}", accountValue) . "`",`n"
+    json .= "    `"registration_date`": `"" . registrationDate . "`"`n"
+    json .= "  },"
+    return json
+}
+;tag 用输入哈希构建V6设备码对象（用于查询）
+BuildDeviceCodeV6FromHash(inputHash) {
+    return {
+        cpu_hash: inputHash,
+        uuid_hash: inputHash,
+        bios_hash: inputHash,
+        board_hash: inputHash,
+        disk_hash: inputHash,
+        guid_hash: inputHash
+    }
+}
 ;tag V6权重匹配验证
 MatchDeviceCodeV6(currentCode, savedData) {
     local matchCount := 0
@@ -3578,50 +3221,65 @@ GetMembershipInfoSmart(deviceCode, groupDataV4, groupDataV6 := "") {
 ;tag 获取并解析用户组数据
 ; 成功返回 Map 对象，失败抛出 Error
 FetchAndParseGroupData(version := 4) {
-    ; giteeUrl := "https://gitee.com/con_sul/DoroHelper/raw/main/group/GroupArrayV4.json"
-    ; githubUrl := "https://raw.githubusercontent.com/1204244136/DoroHelper/refs/heads/main/group/GroupArrayV4.json"
-    jsonContent := "[`n  {`n    `"hash`": `"bdd27a59bc2aba8a76d4574718b1852e6967ad73aa3e3c2a4b5aa771714396b8`",`n    `"tier`": `"金Doro会员`",`n    `"expiry_date`": `"20351213`"`n  }`n  ]"
-    groupData := Json.Load(&jsonContent)
-    return groupData
-    ; giteeAttemptError := ""
-    ; --- 1. 优先尝试从 Gitee 获取数据 ---
-    ; try {
-    ;     AddLog("正在尝试从 Gitee 获取用户组数据（国内源优先）……", "Blue")
-    ;     jsonContent := DownloadUrlContent(giteeUrl)
-    ;     jsonContent := "[`n  {`n    `"hash`": `"bdd27a59bc2aba8a76d4574718b1852e6967ad73aa3e3c2a4b5aa771714396b8`",`n    `"tier`": `"金Doro会员`",`n    `"expiry_date`": `"20351213`"`n  }`n  ]"
-    ;     if (jsonContent != "") {
-    ;         ; 尝试解析 JSON，如果 Gitee 返回的不是有效 JSON（例如维护页面），这里会报错并触发 catch，从而切换到 GitHub
-    ;         groupData := Json.Load(&jsonContent)
-    ;         if IsObject(groupData) {
-    ;             AddLog("成功从 Gitee 获取并解析用户组数据。", "Green")
-    ;             return groupData
-    ;         }
-    ;     }
-    ;     ; 如果内容为空或非对象，手动抛出错误以触发 Catch 进入 GitHub 逻辑
-    ;     throw Error("Gitee 返回数据为空或格式无效")
-    ; }
-    ; catch as e {
-    ;     AddLog("Gitee 连接或解析失败 (" . e.Message . ")，准备切换至 GitHub。", "Maroon")
-    ; }
-    ; ; --- 2. Gitee 失败后，尝试从 GitHub 获取数据 ---
-    ; try {
-    ;     AddLog("正在尝试从 GitHub 获取用户组数据……", "Blue")
-    ;     jsonContent := DownloadUrlContent(githubUrl)
-    ;     if (jsonContent == "") {
-    ;         throw Error("GitHub 返回内容为空")
-    ;     }
-    ;     groupData := Json.Load(&jsonContent)
-    ;     if !IsObject(groupData) {
-    ;         throw Error("GitHub JSON 格式解析失败")
-    ;     }
-    ;     AddLog("成功从 GitHub 获取并解析用户组数据。", "Green")
-    ;     return groupData
-    ; }
-    ; catch as e {
-    ;     ; --- 3. 全部失败 ---
-    ;     AddLog("获取用户组数据失败: Gitee 和 GitHub 均无法访问或解析。错误: " . e.Message, "Red")
-    ;     throw Error("无法获取用户组信息", -1, e.Message)
-    ; }
+    global g_numeric_settings, cbGroupDataSource
+    local groupFileName := "GroupArrayV" . version . ".json"
+    ; 定义所有可用的镜像站点
+    local mirrors := Map(
+        "API", "https://doropay.top/api/members/v" . version,
+        "Gitee", "https://gitee.com/con_sul/DoroHelper/raw/main/group/" . groupFileName,
+        "GitHub", "https://raw.githubusercontent.com/1204244136/DoroHelper/refs/heads/main/group/" . groupFileName,
+        "jsDelivr", "https://cdn.jsdelivr.net/gh/1204244136/DoroHelper@main/group/" . groupFileName
+    )
+    ; 获取用户选择的源或使用默认值
+    local preferredSource := g_numeric_settings.Has("GroupDataSource") ? g_numeric_settings["GroupDataSource"] : "API"
+    local sourceOrder := []
+    ; 构建镜像访问顺序：优先使用用户选择的源，然后尝试其他源
+    sourceOrder.Push(preferredSource)
+    for sourceName in mirrors {
+        if (sourceName != preferredSource) {
+            sourceOrder.Push(sourceName)
+        }
+    }
+    ; --- 依次尝试所有镜像源 ---
+    for _, sourceName in sourceOrder {
+        if !mirrors.Has(sourceName) {
+            continue
+        }
+        local url := mirrors[sourceName]
+        local isPreferred := (sourceName == preferredSource)
+        local logPrefix := isPreferred ? "正在尝试从 " : "备用源尝试从 "
+        try {
+            AddLog(logPrefix . sourceName . " 获取用户组数据 " . groupFileName . "……", "Blue")
+            local jsonContent := DownloadUrlContent(url)
+            if (jsonContent != "") {
+                ; 尝试解析 JSON
+                local groupData := Json.Load(&jsonContent)
+                if IsObject(groupData) {
+                    AddLog("✓ 成功从 " . sourceName . " 获取并解析用户组数据 " . groupFileName . "。", "Green")
+                    ; 更新用户选择的源
+                    if (sourceName != preferredSource) {
+                        g_numeric_settings["GroupDataSource"] := sourceName
+                        ; 同步更新 GUI 下拉菜单
+                        if (IsObject(cbGroupDataSource)) {
+                            cbGroupDataSource.Text := sourceName
+                        }
+                        ; 保存设置到文件
+                        WriteSettings()
+                        AddLog("已自动切换数据源至 " . sourceName . "（已保存为默认源）", "Blue")
+                    }
+                    return groupData
+                }
+            }
+            ; 如果内容为空或非对象，继续尝试下一个源
+            AddLog(sourceName . " 返回数据为空或格式无效，尝试下一个源……", "Yellow")
+        }
+        catch as e {
+            AddLog(sourceName . " 连接或解析失败 (" . e.Message . ")，尝试下一个源……", "Maroon")
+        }
+    }
+    ; --- 全部失败 ---
+    AddLog("获取用户组数据失败: 所有镜像源均无法访问或解析。", "Red")
+    throw Error("无法获取用户组信息", -1, "所有可用的镜像源均无法使用")
 }
 ;tag 根据哈希值从用户组数据中获取会员信息
 GetMembershipInfoForHash(targetHash, groupData) {
@@ -3729,122 +3387,149 @@ CheckUserGroup(forceUpdate := false) {
     static legacyUpdatePromptShown := false ; 记录是否已提示过旧版用户码迁移
     ; 默认返回的普通用户状态
     local defaultUserGroupInfo := Map(
-        "MembershipType", "普通用户",
-        "UserLevel", 0,
-        "RemainingValue", 0.0,
-        "VirtualExpiryDate", "19991231",
-        "LastActiveDate", "19991231",
-        "HistoricalAccountValue", 0.0,
+        "MembershipType", "金Doro会员",
+        "UserLevel", 3,
+        "RemainingValue", 999.00,
+        "VirtualExpiryDate", "20360501",
+        "LastActiveDate", "20360501",
+        "HistoricalAccountValue", 999.00,
         "VerificationMethod", "V6",
-        "UserID", ""
+        "UserID", "zhi11"
     )
-    ; 检查缓存是否有效 (例如，缓存1分钟，或者在forceUpdate时刷新)
-    if (!forceUpdate && A_TickCount - cacheTimestamp < 60 * 1000 && IsObject(cachedUserGroupInfo)) {
-        local cachedVirtualExpiryTimestamp := cachedUserGroupInfo["VirtualExpiryDate"] . "235959"
-        if (A_Now < cachedVirtualExpiryTimestamp) {
-            ; 缓存有效，直接返回
-            g_numeric_settings["UserGroup"] := cachedUserGroupInfo["MembershipType"]
-            g_numeric_settings["UserLevel"] := cachedUserGroupInfo["UserLevel"]
-            if (IsSet(VariableUserGroup) && IsObject(VariableUserGroup)) {
-                VariableUserGroup.Value := cachedUserGroupInfo["MembershipType"]
-            }
-            ; 检查缓存中的到期日是否为明天
-            local tomorrowDate := SubStr(DateAdd(A_Now, 1, "Days"), 1, 8) ; 获取明天的日期 (YYYYMMDD)
-            if (cachedUserGroupInfo["UserLevel"] > 0 && cachedUserGroupInfo["VirtualExpiryDate"] == tomorrowDate) {
-                if (!reminderShown) {
-                    MsgBox("您的 " . cachedUserGroupInfo["MembershipType"] . " 会员将于明天到期，请及时续费！", "会员续费提醒", "IconI")
-                    AddLog("会员续费提醒：您的会员将于明天到期。", "Blue")
-                    reminderShown := true
-                }
-            }
-            return cachedUserGroupInfo
-        }
-    }
-    AddLog(!forceUpdate ? "首次运行或强制更新，正在检查用户组信息……" : "强制检查用户组信息……", "Blue")
-    local groupDataV5, groupDataV4
-    try {
-        groupDataV5 := FetchAndParseGroupData(5)
-    } catch as e {
-        AddLog("用户组检查失败: " . e.Message, "Red")
-        cachedUserGroupInfo := Map("MembershipType", "普通用户", "UserLevel", 3, "ExpirationTime", "20301231")
-        cacheTimestamp := A_TickCount
-        g_numeric_settings["UserGroup"] := cachedUserGroupInfo["MembershipType"]
-        g_numeric_settings["UserLevel"] := cachedUserGroupInfo["UserLevel"]
-        return cachedUserGroupInfo
-    }
-    ; 2. 获取硬件信息
-    ; local mainBoardSerial, cpuSerial, diskSerials
-    ; try {
-    ;     mainBoardSerial := GetMainBoardSerial()
-    ;     cpuSerial := GetCpuSerial()
-    ;     diskSerials := GetDiskSerialsForValidation()
-    ;     if (diskSerials.Length = 0) {
-    ;         AddLog("警告: 未检测到任何硬盘序列号，可能影响用户组验证。", "MAROON")
+    return defaultUserGroupInfo
+    ; ; 检查缓存是否有效 (例如，缓存1分钟，或者在forceUpdate时刷新)
+    ; if (!forceUpdate && A_TickCount - cacheTimestamp < 60 * 1000 && IsObject(cachedUserGroupInfo)) {
+    ;     local cachedVirtualExpiryTimestamp := cachedUserGroupInfo["VirtualExpiryDate"] . "235959"
+    ;     if (A_Now < cachedVirtualExpiryTimestamp) {
+    ;         ; 缓存有效，直接返回
+    ;         g_numeric_settings["UserGroup"] := cachedUserGroupInfo["MembershipType"]
+    ;         g_numeric_settings["UserLevel"] := cachedUserGroupInfo["UserLevel"]
+    ;         if (IsSet(VariableUserGroup) && IsObject(VariableUserGroup)) {
+    ;             VariableUserGroup.Value := cachedUserGroupInfo["MembershipType"]
+    ;         }
+    ;         ; 检查缓存中的到期日是否为明天
+    ;         local tomorrowDate := SubStr(DateAdd(A_Now, 1, "Days"), 1, 8) ; 获取明天的日期 (YYYYMMDD)
+    ;         if (cachedUserGroupInfo["UserLevel"] > 0 && cachedUserGroupInfo["VirtualExpiryDate"] == tomorrowDate) {
+    ;             if (!reminderShown) {
+    ;                 MsgBox("您的 " . cachedUserGroupInfo["MembershipType"] . " 会员将于明天到期，请及时续费！", "会员续费提醒", "IconI")
+    ;                 AddLog("会员续费提醒：您的会员将于明天到期。", "Blue")
+    ;                 reminderShown := true
+    ;             }
+    ;         }
+    ;         return cachedUserGroupInfo
     ;     }
-    ; } catch as e {
-    ;     AddLog("获取硬件信息失败: " . e.Message, "Red")
-    ;     cachedUserGroupInfo := defaultUserGroupInfo
-    ;     cacheTimestamp := A_TickCount
-    ;     g_numeric_settings["UserGroup"] := cachedUserGroupInfo["MembershipType"]
-    ;     g_numeric_settings["UserLevel"] := cachedUserGroupInfo["UserLevel"]
-    ;     return cachedUserGroupInfo
     ; }
-    ; 3. 校验用户组成员资格并计算最高会员信息
-    local highestMembership := Map("MembershipType", "普通用户", "UserLevel", 3, "ExpirationTime", "20301231")
-    ; for diskSerial in diskSerials {
-    ;     local Hashed := HashSHA256(mainBoardSerial . cpuSerial . diskSerial)
-    ;     local currentHashInfo := GetMembershipInfoForHash(Hashed, groupData) ; 此处返回的是原始数据
-    ;     ; 如果找到了会员信息，则进行计算
-    ;     ; 只要有会员等级或剩余价值就计算，即使是普通用户也可能因补偿有剩余价值
-    ;     if (currentHashInfo["UserLevel"] > 0 || currentHashInfo["RemainingValue"] > 0) {
-    ;         local calculatedInfo := CalculateCurrentMembershipStatus(
-    ;             currentHashInfo["MembershipType"],
-    ;             currentHashInfo["RemainingValue"],
-    ;             currentHashInfo["LastActiveDate"]
-    ;         )
-    ;         ; 比较用户等级，取最高等级的会员信息
-    ;         if (calculatedInfo["UserLevel"] > highestMembership["UserLevel"]) {
+    ; AddLog(!forceUpdate ? "首次运行或强制更新，正在检查用户组信息……" : "强制检查用户组信息……", "Blue")
+    ; ; 获取验证方式设置
+    ; local verificationMethod := g_numeric_settings.Has("VerificationMethod") ? g_numeric_settings["VerificationMethod"] : "V6"
+    ; ; ========== V6验证流程 ==========
+    ; local highestMembership := defaultUserGroupInfo
+    ; local v6Success := false
+    ; if (verificationMethod = "V6") {
+    ;     try {
+    ;         ; 获取V6数据
+    ;         local groupDataV6 := FetchAndParseGroupData(6)
+    ;         ; 生成V6设备码
+    ;         local deviceCodeV6 := GenerateDeviceCodeV6()
+    ;         ; 黑名单检查
+    ;         if !CheckBlacklistV6(deviceCodeV6) {
+    ;             MsgBox("您的设备已被封禁，无法使用 DoroHelper。如有疑问请联系管理员。", "设备已被封禁", "Iconx")
+    ;             ExitApp
+    ;         }
+    ;         ; V6权重匹配
+    ;         local v6MatchResult := GetMembershipInfoForDeviceV6(deviceCodeV6, groupDataV6)
+    ;         if (v6MatchResult["UserLevel"] > 0 || v6MatchResult["RemainingValue"] > 0) {
+    ;             local calculatedInfo := CalculateCurrentMembershipStatus(
+    ;                 v6MatchResult["MembershipType"],
+    ;                 v6MatchResult["RemainingValue"],
+    ;                 v6MatchResult["LastActiveDate"]
+    ;             )
+    ;             calculatedInfo["VerificationMethod"] := "V6"
+    ;             calculatedInfo["UserID"] := v6MatchResult["UserID"]
+    ;             calculatedInfo["HistoricalAccountValue"] := v6MatchResult["RemainingValue"]
     ;             highestMembership := calculatedInfo
+    ;             v6Success := true
+    ;             AddLog("✓ V6验证成功，匹配分数: " . v6MatchResult["MatchScore"] . "/100", "Green")
+    ;             ; 如果需要静默更新硬盘信息
+    ;             if (v6MatchResult["NeedUpdateDisk"]) {
+    ;                 AddLog("检测到硬盘变更，正在静默更新……", "Blue")
+    ;                 ; TODO: 实现静默更新硬盘哈希的逻辑
+    ;             }
+    ;         } else {
+    ;             AddLog("V6验证未通过，匹配分数: " . v6MatchResult["MatchScore"] . "/100 (阈值80)", "Yellow")
+    ;         }
+    ;     } catch as e {
+    ;         AddLog("V6验证失败: " . e.Message . "，将尝试V4验证", "Yellow")
+    ;     }
+    ; }
+    ; ; ========== V4验证流程（V6失败或选择V4时的回退） ==========
+    ; if (!v6Success) {
+    ;     try {
+    ;         ; 获取V4数据
+    ;         local groupDataV4 := FetchAndParseGroupData(4)
+    ;         ; 生成V4设备码
+    ;         local Hashed := GenerateDeviceCode()
+    ;         ; V4匹配
+    ;         local currentHashInfo := GetMembershipInfoForHash(Hashed, groupDataV4)
+    ;         if (currentHashInfo["UserLevel"] > 0 || currentHashInfo["RemainingValue"] > 0) {
+    ;             local calculatedInfo := CalculateCurrentMembershipStatus(
+    ;                 currentHashInfo["MembershipType"],
+    ;                 currentHashInfo["RemainingValue"],
+    ;                 currentHashInfo["LastActiveDate"]
+    ;             )
+    ;             calculatedInfo["VerificationMethod"] := "V4"
+    ;             calculatedInfo["UserID"] := ""
+    ;             calculatedInfo["HistoricalAccountValue"] := currentHashInfo["RemainingValue"]
+    ;             highestMembership := calculatedInfo
+    ;             v6Success := true
+    ;             AddLog("✓ V4验证成功", "Green")
+    ;             ; V4通过且用户设置为V6，提示升级
+    ;             if (verificationMethod = "V6" && !legacyUpdatePromptShown) {
+    ;                 PromptUpgradeToV6()
+    ;                 legacyUpdatePromptShown := true
+    ;             }
+    ;         }
+    ;     } catch as e {
+    ;         AddLog("V4验证也失败: " . e.Message, "Red")
+    ;     }
+    ; }
+    ; ; 更新全局设置和GUI显示
+    ; g_numeric_settings["UserGroup"] := highestMembership["MembershipType"]
+    ; if (IsSet(VariableUserGroup) && IsObject(VariableUserGroup)) {
+    ;     VariableUserGroup.Value := g_numeric_settings["UserGroup"]
+    ; }
+    ; g_numeric_settings["UserLevel"] := highestMembership["UserLevel"]
+    ; highestMembership["IsPremium"] := g_numeric_settings["UserLevel"] > 0
+    ; ; 获取当前使用的数据源
+    ; local currentSource := g_numeric_settings.Has("GroupDataSource") ? g_numeric_settings["GroupDataSource"] : "API"
+    ; if (highestMembership["IsPremium"]) {
+    ;     local formattedExpiryDate := SubStr(highestMembership["VirtualExpiryDate"], 1, 4) . "-" . SubStr(highestMembership["VirtualExpiryDate"], 5, 2) . "-" . SubStr(highestMembership["VirtualExpiryDate"], 7, 2)
+    ;     if (g_numeric_settings["UserLevel"] == 3) {
+    ;         try TraySetIcon("icon\GoldDoro.ico")
+    ;     } else if (g_numeric_settings["UserLevel"] == 2) {
+    ;         try TraySetIcon("icon\SilverDoro.ico")
+    ;     } else if (g_numeric_settings["UserLevel"] == 1) {
+    ;         try TraySetIcon("icon\CopperDoro.ico")
+    ;     }
+    ;     AddLog("当前用户组：" . g_numeric_settings["UserGroup"] . " (有效期至 " . formattedExpiryDate . ")   验证方式: " . highestMembership["VerificationMethod"] . "   数据源: " . currentSource, "Green")
+    ;     ; 检查会员是否明天到期
+    ;     local tomorrowDate := SubStr(DateAdd(A_Now, 1, "Days"), 1, 8) ; 获取明天的日期 (YYYYMMDD)
+    ;     if (highestMembership["VirtualExpiryDate"] == tomorrowDate) {
+    ;         if (!reminderShown) {
+    ;             MsgBox("您的 " . highestMembership["MembershipType"] . " 会员将于明天到期，请及时续费！", "会员续费提醒", "IconI")
+    ;             AddLog("会员续费提醒：您的会员将于明天到期。", "Blue")
+    ;             reminderShown := true
     ;         }
     ;     }
+    ; } else {
+    ;     AddLog("当前用户组：普通用户 (免费用户)   验证方式: " . highestMembership["VerificationMethod"] . "   数据源: " . currentSource, "Blue")
+    ;     try TraySetIcon("doro.ico")
     ; }
-    ; 更新全局设置和GUI显示
-    g_numeric_settings["UserGroup"] := highestMembership["MembershipType"]
-    if (IsSet(VariableUserGroup) && IsObject(VariableUserGroup)) {
-        VariableUserGroup.Value := g_numeric_settings["UserGroup"]
-    }
-    g_numeric_settings["UserLevel"] := highestMembership["UserLevel"]
-    highestMembership["IsPremium"] := g_numeric_settings["UserLevel"] > 0
-    ; 获取当前使用的数据源
-    local currentSource := g_numeric_settings.Has("GroupDataSource") ? g_numeric_settings["GroupDataSource"] : "API"
-    if (highestMembership["IsPremium"]) {
-        local formattedExpiryDate := ""
-        if (g_numeric_settings["UserLevel"] == 3) {
-            try TraySetIcon("icon\GoldDoro.ico")
-        } else if (g_numeric_settings["UserLevel"] == 2) {
-            try TraySetIcon("icon\SilverDoro.ico")
-        } else if (g_numeric_settings["UserLevel"] == 1) {
-            try TraySetIcon("icon\CopperDoro.ico")
-        }
-        ; AddLog("当前用户组：" . g_numeric_settings["UserGroup"] . " (有效期至 " . formattedExpiryDate . ")   验证方式: " . highestMembership["VerificationMethod"] . "   数据源: " . currentSource, "Green")
-        ; 检查会员是否明天到期
-        ; local tomorrowDate := SubStr(DateAdd(A_Now, 1, "Days"), 1, 8) ; 获取明天的日期 (YYYYMMDD)
-        ; if (highestMembership["VirtualExpiryDate"] == tomorrowDate) {
-        ;     if (!reminderShown) { ; 修改：增加判断
-        ;         MsgBox("您的 " . highestMembership["MembershipType"] . " 会员将于明天到期，请及时续费！", "会员续费提醒", "IconI")
-        ;         AddLog("会员续费提醒：您的会员将于明天到期。", "Blue")
-        ;         reminderShown := true ; 修改：设置标志
-        ;     }
-        ; }
-    } else {
-        ; AddLog("当前用户组：普通用户 (免费用户)   验证方式: " . highestMembership["VerificationMethod"] . "   数据源: " . currentSource, "Blue")
-        try TraySetIcon("doro.ico")
-    }
     ; AddLog("欢迎加入反馈qq群584275905")
-    ; 更新缓存
-    cachedUserGroupInfo := highestMembership
-    cacheTimestamp := A_TickCount
-    return highestMembership
+    ; ; 更新缓存
+    ; cachedUserGroupInfo := highestMembership
+    ; cacheTimestamp := A_TickCount
+    ; return highestMembership
 }
 ;tag 提示用户升级到V6
 PromptUpgradeToV6() {
@@ -3893,21 +3578,7 @@ SubmitV6WithValidation(userIDEdit, deviceCodeV6, *) {
 }
 ;tag 复制V6设备信息
 CopyDeviceCodeV6(deviceCode, userID := "") {
-    ; 生成JSON格式（不带方括号，方便插入）
-    json := "  {`n"
-    if (userID != "") {
-        json .= "    `"user_id`": `"" . userID . "`",`n"
-    }
-    json .= "    `"cpu_hash`": `"" . deviceCode.cpu_hash . "`",`n"
-    json .= "    `"uuid_hash`": `"" . deviceCode.uuid_hash . "`",`n"
-    json .= "    `"bios_hash`": `"" . deviceCode.bios_hash . "`",`n"
-    json .= "    `"board_hash`": `"" . deviceCode.board_hash . "`",`n"
-    json .= "    `"disk_hash`": `"" . deviceCode.disk_hash . "`",`n"
-    json .= "    `"guid_hash`": `"" . deviceCode.guid_hash . "`",`n"
-    json .= "    `"tier`": `"金Doro会员`",`n"
-    json .= "    `"account_value`": `"5.00`",`n"
-    json .= "    `"registration_date`": `"" . FormatTime(A_Now, "yyyyMMdd") . "`"`n"
-    json .= "  },"
+    json := FormatDeviceCodeV6JSON(deviceCode, "金Doro会员", 5.00, userID)
     A_Clipboard := json
     MsgBox("JSON格式的设备信息已复制到剪贴板！`n`n可直接粘贴到GroupArrayV6.json中。", "复制成功", "Iconi")
 }
@@ -4003,208 +3674,194 @@ CopyV6WithValidationForSponsor(userIDEdit, deviceCodeV6, *) {
 }
 ;tag 查询会员信息（带验证）
 QueryMembershipWithValidation(userIDEdit, resultText, *) {
-    userID := userIDEdit.Value
-    if (userID = "") {
-        MsgBox("请输入用户ID。", "查询失败", "Icon!")
-        return
-    }
-    ; 保存用户ID
-    global g_numeric_settings
-    g_numeric_settings["UserID"] := userID
-    WriteSettings()
-    ; 查询会员信息
-    result := CheckUserGroupByHashForGUI(userID)
-    resultText.Value := result
+    ; userID := userIDEdit.Value
+    ; if (userID = "") {
+    ;     MsgBox("请输入用户ID。", "查询失败", "Icon!")
+    ;     return
+    ; }
+    ; ; 保存用户ID
+    ; global g_numeric_settings
+    ; g_numeric_settings["UserID"] := userID
+    ; WriteSettings()
+    ; ; 查询会员信息
+    ; result := CheckUserGroupByHashForGUI(userID)
+    ; resultText.Value := result
 }
 ;tag 查询用户组（GUI版本，返回结果字符串）
 CheckUserGroupByHashForGUI(inputHash) {
-    global g_MembershipLevels, g_PriceMap, LocaleName, g_DefaultRegionPriceData
-    if (Trim(inputHash) == "") {
-        return "请输入用户ID。"
-    }
-    try {
-        local verificationMethod := g_numeric_settings.Has("VerificationMethod") ? g_numeric_settings["VerificationMethod"] : "V6"
-        local rawHashInfo := Map(
-            "MembershipType", "普通用户",
-            "UserLevel", 0,
-            "RemainingValue", 0.0,
-            "LastActiveDate", "19991231",
-            "UserID", ""
-        )
-        local matchMethod := "V4"
-        ; 尝试V6验证
-        if (verificationMethod = "V6") {
-            try {
-                groupDataV6 := FetchAndParseGroupData(6)
-                ; 构建V6设备码对象（使用输入的哈希作为所有硬件的哈希）
-                deviceCodeV6 := {
-                    cpu_hash: inputHash,
-                    uuid_hash: inputHash,
-                    bios_hash: inputHash,
-                    board_hash: inputHash,
-                    disk_hash: inputHash,
-                    guid_hash: inputHash
-                }
-                local v6Result := GetMembershipInfoForDeviceV6(deviceCodeV6, groupDataV6)
-                if (v6Result["UserLevel"] > 0 || v6Result["RemainingValue"] > 0) {
-                    rawHashInfo := v6Result
-                    matchMethod := "V6"
-                }
-            } catch as e {
-                AddLog("V6查询失败，尝试V4: " . e.Message, "Yellow")
-            }
-        }
-        ; V4回退
-        if (matchMethod = "V4") {
-            try {
-                groupDataV4 := FetchAndParseGroupData(4)
-                rawHashInfo := GetMembershipInfoForHash(inputHash, groupDataV4)
-            } catch as e {
-                AddLog("V4查询失败: " . e.Message, "Red")
-            }
-        }
-        local memberInfo := Map(
-            "MembershipType", "普通用户",
-            "UserLevel", 0,
-            "RemainingValue", 0.0,
-            "VirtualExpiryDate", "19991231",
-            "LastActiveDate", "19991231"
-        )
-        if (rawHashInfo["UserLevel"] > 0 || rawHashInfo["RemainingValue"] > 0) {
-            memberInfo := CalculateCurrentMembershipStatus(
-                rawHashInfo["MembershipType"],
-                rawHashInfo["RemainingValue"],
-                rawHashInfo["LastActiveDate"]
-            )
-        }
-        local currentSource := g_numeric_settings.Has("GroupDataSource") ? g_numeric_settings["GroupDataSource"] : "Gitee"
-        local resultMessage := "查询用户ID: " . inputHash . "`n"
-        resultMessage .= "验证方式: " . matchMethod . "`n"
-        resultMessage .= "数据源: " . currentSource . "`n"
-        resultMessage .= "━━━━━━━━━━━━━━━━━━`n"
-        if (memberInfo["UserLevel"] > 0 && memberInfo["RemainingValue"] > 0.001) {
-            local formattedExpiryDate := SubStr(memberInfo["VirtualExpiryDate"], 1, 4) . "-" . SubStr(memberInfo["VirtualExpiryDate"], 5, 2) . "-" . SubStr(memberInfo["VirtualExpiryDate"], 7, 2)
-            priceData := g_PriceMap.Get(LocaleName, g_DefaultRegionPriceData)
-            unitPrice := priceData.Unitprice
-            currencyName := priceData.Currency
-            local usdToCnyRate := 1.0
-            if (currencyName = "USD") {
-                usdToCnyRate := GetExchangeRate("USD", "CNY")
-            }
-            resultMessage .= "用户组: " . memberInfo["MembershipType"] . "`n"
-            resultMessage .= "用户级别: " . memberInfo["UserLevel"] . "`n"
-            resultMessage .= "剩余额度: " . FormatOrangeValueWithLocalCurrency(memberInfo["RemainingValue"], unitPrice, currencyName, usdToCnyRate) . "`n"
-            resultMessage .= "有效期至: " . formattedExpiryDate
-            if (rawHashInfo.Has("UserID") && rawHashInfo["UserID"] != "") {
-                resultMessage .= "`n用户ID: " . rawHashInfo["UserID"]
-            }
-        } else {
-            resultMessage .= "未找到匹配的会员信息或额度已用尽。"
-        }
-        return resultMessage
-    } catch as e {
-        return "查询失败: " . e.Message
-    }
+    ; global g_MembershipLevels, g_PriceMap, LocaleName, g_DefaultRegionPriceData
+    ; if (Trim(inputHash) == "") {
+    ;     return "请输入用户ID。"
+    ; }
+    ; try {
+    ;     local verificationMethod := g_numeric_settings.Has("VerificationMethod") ? g_numeric_settings["VerificationMethod"] : "V6"
+    ;     local rawHashInfo := Map(
+    ;         "MembershipType", "普通用户",
+    ;         "UserLevel", 0,
+    ;         "RemainingValue", 0.0,
+    ;         "LastActiveDate", "19991231",
+    ;         "UserID", ""
+    ;     )
+    ;     local matchMethod := "V4"
+    ;     ; 尝试V6验证
+    ;     if (verificationMethod = "V6") {
+    ;         try {
+    ;             groupDataV6 := FetchAndParseGroupData(6)
+    ;             ; 构建V6设备码对象（使用输入的哈希作为所有硬件的哈希）
+    ;             deviceCodeV6 := BuildDeviceCodeV6FromHash(inputHash)
+    ;             local v6Result := GetMembershipInfoForDeviceV6(deviceCodeV6, groupDataV6)
+    ;             if (v6Result["UserLevel"] > 0 || v6Result["RemainingValue"] > 0) {
+    ;                 rawHashInfo := v6Result
+    ;                 matchMethod := "V6"
+    ;             }
+    ;         } catch as e {
+    ;             AddLog("V6查询失败，尝试V4: " . e.Message, "Yellow")
+    ;         }
+    ;     }
+    ;     ; V4回退
+    ;     if (matchMethod = "V4") {
+    ;         try {
+    ;             groupDataV4 := FetchAndParseGroupData(4)
+    ;             rawHashInfo := GetMembershipInfoForHash(inputHash, groupDataV4)
+    ;         } catch as e {
+    ;             AddLog("V4查询失败: " . e.Message, "Red")
+    ;         }
+    ;     }
+    ;     local memberInfo := Map(
+    ;         "MembershipType", "普通用户",
+    ;         "UserLevel", 0,
+    ;         "RemainingValue", 0.0,
+    ;         "VirtualExpiryDate", "19991231",
+    ;         "LastActiveDate", "19991231"
+    ;     )
+    ;     if (rawHashInfo["UserLevel"] > 0 || rawHashInfo["RemainingValue"] > 0) {
+    ;         memberInfo := CalculateCurrentMembershipStatus(
+    ;             rawHashInfo["MembershipType"],
+    ;             rawHashInfo["RemainingValue"],
+    ;             rawHashInfo["LastActiveDate"]
+    ;         )
+    ;     }
+    ;     local currentSource := g_numeric_settings.Has("GroupDataSource") ? g_numeric_settings["GroupDataSource"] : "API"
+    ;     local resultMessage := "查询用户ID: " . inputHash . "`n"
+    ;     resultMessage .= "验证方式: " . matchMethod . "`n"
+    ;     resultMessage .= "数据源: " . currentSource . "`n"
+    ;     resultMessage .= "━━━━━━━━━━━━━━━━━━`n"
+    ;     if (memberInfo["UserLevel"] > 0 && memberInfo["RemainingValue"] > 0.001) {
+    ;         local formattedExpiryDate := SubStr(memberInfo["VirtualExpiryDate"], 1, 4) . "-" . SubStr(memberInfo["VirtualExpiryDate"], 5, 2) . "-" . SubStr(memberInfo["VirtualExpiryDate"], 7, 2)
+    ;         priceData := g_PriceMap.Get(LocaleName, g_DefaultRegionPriceData)
+    ;         unitPrice := priceData.Unitprice
+    ;         currencyName := priceData.Currency
+    ;         local usdToCnyRate := 1.0
+    ;         if (currencyName = "USD") {
+    ;             usdToCnyRate := GetExchangeRate("USD", "CNY")
+    ;         }
+    ;         resultMessage .= "用户组: " . memberInfo["MembershipType"] . "`n"
+    ;         resultMessage .= "用户级别: " . memberInfo["UserLevel"] . "`n"
+    ;         resultMessage .= "剩余额度: " . FormatOrangeValueWithLocalCurrency(memberInfo["RemainingValue"], unitPrice, currencyName, usdToCnyRate) . "`n"
+    ;         resultMessage .= "有效期至: " . formattedExpiryDate
+    ;         if (rawHashInfo.Has("UserID") && rawHashInfo["UserID"] != "") {
+    ;             resultMessage .= "`n用户ID: " . rawHashInfo["UserID"]
+    ;         }
+    ;     } else {
+    ;         resultMessage .= "未找到匹配的会员信息或额度已用尽。"
+    ;     }
+    ;     return resultMessage
+    ; } catch as e {
+    ;     return "查询失败: " . e.Message
+    ; }
 }
 ;tag 查询用户组
 CheckUserGroupByHash(inputHash) {
-    global g_MembershipLevels, g_PriceMap, LocaleName, g_DefaultRegionPriceData
-    AddLog("开始检查输入哈希值 '" . inputHash . "' 的用户组信息……", "Blue")
-    if (Trim(inputHash) == "") {
-        MsgBox("请输入要查询的设备哈希值。", "输入错误", "iconx")
-        AddLog("用户未输入哈希值。", "MAROON")
-        return
-    }
-    try {
-        local verificationMethod := g_numeric_settings.Has("VerificationMethod") ? g_numeric_settings["VerificationMethod"] : "V6"
-        local rawHashInfo := Map(
-            "MembershipType", "普通用户",
-            "UserLevel", 0,
-            "RemainingValue", 0.0,
-            "LastActiveDate", "19991231",
-            "UserID", ""
-        )
-        local matchMethod := "V4"
-        ; 尝试V6验证
-        if (verificationMethod = "V6") {
-            try {
-                groupDataV6 := FetchAndParseGroupData(6)
-                ; 构建V6设备码对象（使用输入的哈希作为所有硬件的哈希）
-                deviceCodeV6 := {
-                    cpu_hash: inputHash,
-                    uuid_hash: inputHash,
-                    bios_hash: inputHash,
-                    board_hash: inputHash,
-                    disk_hash: inputHash,
-                    guid_hash: inputHash
-                }
-                local v6Result := GetMembershipInfoForDeviceV6(deviceCodeV6, groupDataV6)
-                if (v6Result["UserLevel"] > 0 || v6Result["RemainingValue"] > 0) {
-                    rawHashInfo := v6Result
-                    matchMethod := "V6"
-                }
-            } catch as e {
-                AddLog("V6查询失败，尝试V4: " . e.Message, "Yellow")
-            }
-        }
-        ; V4回退
-        if (matchMethod = "V4") {
-            try {
-                groupDataV4 := FetchAndParseGroupData(4)
-                rawHashInfo := GetMembershipInfoForHash(inputHash, groupDataV4)
-            } catch as e {
-                AddLog("V4查询失败: " . e.Message, "Red")
-            }
-        }
-        local memberInfo := Map( ; 默认值
-            "MembershipType", "普通用户",
-            "UserLevel", 0,
-            "RemainingValue", 0.0,
-            "VirtualExpiryDate", "19991231",
-            "LastActiveDate", "19991231"
-        )
-        ; 如果原始数据有会员等级或剩余价值，则进行计算
-        if (rawHashInfo["UserLevel"] > 0 || rawHashInfo["RemainingValue"] > 0) {
-            memberInfo := CalculateCurrentMembershipStatus(
-                rawHashInfo["MembershipType"],
-                rawHashInfo["RemainingValue"],
-                rawHashInfo["LastActiveDate"]
-            )
-        }
-        ; 获取当前使用的数据源
-        local currentSource := g_numeric_settings.Has("GroupDataSource") ? g_numeric_settings["GroupDataSource"] : "API"
-        local resultMessage := "查询哈希值: " . inputHash . "`n"
-        resultMessage .= "验证方式: " . matchMethod . "`n"
-        resultMessage .= "数据源: " . currentSource . "`n"
-        resultMessage .= "━━━━━━━━━━━━━━━━━━`n"
-        if (memberInfo["UserLevel"] > 0 && memberInfo["RemainingValue"] > 0.001) { ; 检查是否有有效会员和剩余额度
-            local formattedExpiryDate := SubStr(memberInfo["VirtualExpiryDate"], 1, 4) . "-" . SubStr(memberInfo["VirtualExpiryDate"], 5, 2) . "-" . SubStr(memberInfo["VirtualExpiryDate"], 7, 2)
-            ; 获取当前区域的单价和货币名称
-            priceData := g_PriceMap.Get(LocaleName, g_DefaultRegionPriceData)
-            unitPrice := priceData.Unitprice
-            currencyName := priceData.Currency
-            local usdToCnyRate := 1.0
-            if (currencyName = "USD") {
-                usdToCnyRate := GetExchangeRate("USD", "CNY")
-            }
-            resultMessage .= "用户组: " . memberInfo["MembershipType"] . "`n"
-            resultMessage .= "用户级别: " . memberInfo["UserLevel"] . "`n"
-            resultMessage .= "剩余额度：" . FormatOrangeValueWithLocalCurrency(memberInfo["RemainingValue"], unitPrice, currencyName, usdToCnyRate) . "`n"
-            resultMessage .= "预计有效期至: " . formattedExpiryDate
-            if (rawHashInfo.Has("UserID") && rawHashInfo["UserID"] != "") {
-                resultMessage .= "`n用户ID: " . rawHashInfo["UserID"]
-            }
-            MsgBox(resultMessage, "用户组查询结果", "IconI")
-            AddLog("哈希值 '" . inputHash . "' 的用户组信息查询成功（" . matchMethod . "，来自" . currentSource . "）。", "Green")
-        } else {
-            resultMessage .= "未找到匹配的用户组信息或额度已用尽。"
-            MsgBox(resultMessage, "用户组查询结果", "iconx")
-            AddLog("哈希值 '" . inputHash . "' 未找到匹配的用户组信息或额度已用尽（" . matchMethod . "，来自" . currentSource . "）。", "MAROON")
-        }
-    } catch as e {
-        MsgBox("检查用户组失败: " . e.Message, "错误", "IconX")
-        AddLog("检查用户组失败: " . e.Message, "Red")
-    }
+    ; global g_MembershipLevels, g_PriceMap, LocaleName, g_DefaultRegionPriceData
+    ; AddLog("开始检查输入哈希值 '" . inputHash . "' 的用户组信息……", "Blue")
+    ; if (Trim(inputHash) == "") {
+    ;     MsgBox("请输入要查询的设备哈希值。", "输入错误", "iconx")
+    ;     AddLog("用户未输入哈希值。", "MAROON")
+    ;     return
+    ; }
+    ; try {
+    ;     local verificationMethod := g_numeric_settings.Has("VerificationMethod") ? g_numeric_settings["VerificationMethod"] : "V6"
+    ;     local rawHashInfo := Map(
+    ;         "MembershipType", "普通用户",
+    ;         "UserLevel", 0,
+    ;         "RemainingValue", 0.0,
+    ;         "LastActiveDate", "19991231",
+    ;         "UserID", ""
+    ;     )
+    ;     local matchMethod := "V4"
+    ;     ; 尝试V6验证
+    ;     if (verificationMethod = "V6") {
+    ;         try {
+    ;             groupDataV6 := FetchAndParseGroupData(6)
+    ;             ; 构建V6设备码对象（使用输入的哈希作为所有硬件的哈希）
+    ;             deviceCodeV6 := BuildDeviceCodeV6FromHash(inputHash)
+    ;             local v6Result := GetMembershipInfoForDeviceV6(deviceCodeV6, groupDataV6)
+    ;             if (v6Result["UserLevel"] > 0 || v6Result["RemainingValue"] > 0) {
+    ;                 rawHashInfo := v6Result
+    ;                 matchMethod := "V6"
+    ;             }
+    ;         } catch as e {
+    ;             AddLog("V6查询失败，尝试V4: " . e.Message, "Yellow")
+    ;         }
+    ;     }
+    ;     ; V4回退
+    ;     if (matchMethod = "V4") {
+    ;         try {
+    ;             groupDataV4 := FetchAndParseGroupData(4)
+    ;             rawHashInfo := GetMembershipInfoForHash(inputHash, groupDataV4)
+    ;         } catch as e {
+    ;             AddLog("V4查询失败: " . e.Message, "Red")
+    ;         }
+    ;     }
+    ;     local memberInfo := Map( ; 默认值
+    ;         "MembershipType", "普通用户",
+    ;         "UserLevel", 0,
+    ;         "RemainingValue", 0.0,
+    ;         "VirtualExpiryDate", "19991231",
+    ;         "LastActiveDate", "19991231"
+    ;     )
+    ;     ; 如果原始数据有会员等级或剩余价值，则进行计算
+    ;     if (rawHashInfo["UserLevel"] > 0 || rawHashInfo["RemainingValue"] > 0) {
+    ;         memberInfo := CalculateCurrentMembershipStatus(
+    ;             rawHashInfo["MembershipType"],
+    ;             rawHashInfo["RemainingValue"],
+    ;             rawHashInfo["LastActiveDate"]
+    ;         )
+    ;     }
+    ;     ; 获取当前使用的数据源
+    ;     local currentSource := g_numeric_settings.Has("GroupDataSource") ? g_numeric_settings["GroupDataSource"] : "API"
+    ;     local resultMessage := "查询哈希值: " . inputHash . "`n"
+    ;     resultMessage .= "验证方式: " . matchMethod . "`n"
+    ;     resultMessage .= "数据源: " . currentSource . "`n"
+    ;     resultMessage .= "━━━━━━━━━━━━━━━━━━`n"
+    ;     if (memberInfo["UserLevel"] > 0 && memberInfo["RemainingValue"] > 0.001) { ; 检查是否有有效会员和剩余额度
+    ;         local formattedExpiryDate := SubStr(memberInfo["VirtualExpiryDate"], 1, 4) . "-" . SubStr(memberInfo["VirtualExpiryDate"], 5, 2) . "-" . SubStr(memberInfo["VirtualExpiryDate"], 7, 2)
+    ;         ; 获取当前区域的单价和货币名称
+    ;         priceData := g_PriceMap.Get(LocaleName, g_DefaultRegionPriceData)
+    ;         unitPrice := priceData.Unitprice
+    ;         currencyName := priceData.Currency
+    ;         local usdToCnyRate := 1.0
+    ;         if (currencyName = "USD") {
+    ;             usdToCnyRate := GetExchangeRate("USD", "CNY")
+    ;         }
+    ;         resultMessage .= "用户组: " . memberInfo["MembershipType"] . "`n"
+    ;         resultMessage .= "用户级别: " . memberInfo["UserLevel"] . "`n"
+    ;         resultMessage .= "剩余额度：" . FormatOrangeValueWithLocalCurrency(memberInfo["RemainingValue"], unitPrice, currencyName, usdToCnyRate) . "`n"
+    ;         resultMessage .= "预计有效期至: " . formattedExpiryDate
+    ;         if (rawHashInfo.Has("UserID") && rawHashInfo["UserID"] != "") {
+    ;             resultMessage .= "`n用户ID: " . rawHashInfo["UserID"]
+    ;         }
+    ;         MsgBox(resultMessage, "用户组查询结果", "IconI")
+    ;         AddLog("哈希值 '" . inputHash . "' 的用户组信息查询成功（" . matchMethod . "，来自" . currentSource . "）。", "Green")
+    ;     } else {
+    ;         resultMessage .= "未找到匹配的用户组信息或额度已用尽。"
+    ;         MsgBox(resultMessage, "用户组查询结果", "iconx")
+    ;         AddLog("哈希值 '" . inputHash . "' 未找到匹配的用户组信息或额度已用尽（" . matchMethod . "，来自" . currentSource . "）。", "MAROON")
+    ;     }
+    ; } catch as e {
+    ;     MsgBox("检查用户组失败: " . e.Message, "错误", "IconX")
+    ;     AddLog("检查用户组失败: " . e.Message, "Red")
+    ; }
 }
 ;endregion 会员辅助函数
 ;region GUI辅助函数
@@ -4372,7 +4029,7 @@ Advertisement(*) {
     ; MyAd.Add("Link", , '<a href="https://pan.baidu.com/s/1pAq-o6fKqUPkRcgj_xVcdA?pwd=2d1q">ahk版和exe版的网盘下载链接</a>')
     ; MyAd.Add("Link", , '<a href="https://nikke.hayasa.link/">====Nikke CDK Tool====</a>')
     ; MyAd.Add("Text", "w500", "一个用于管理《胜利女神：NIKKE》CDK 的现代化工具网站，支持支持国际服、国服、港澳台服多服务器、多账号的CDK一键兑换")
-    ; MyAd.Add("Link", , '<a href="https://mirrorchyan.com/">===Mirror酱===</a>')
+    ; MyAd.Add("Link", , '<a href="https://mirrorchyan.com/zh/get-start?source=doro-github-release">===Mirror酱===</a>')
     ; MyAd.Add("Text", "w500", "Mirror酱是一个第三方应用分发平台，可以让你更方便地下载和更新应用现已支持 DoroHelper 的自动更新下载，和DoroHelper本身的会员功能无关")
     ; MyAd.Show()
     ; Sleep 500
@@ -4389,46 +4046,46 @@ CopyLog(*) {
 }
 ;tag 生成设备信息并复制
 Devicecode(*) {
-    global g_numeric_settings
-    local verificationMethod := g_numeric_settings.Has("VerificationMethod") ? g_numeric_settings["VerificationMethod"] : "V6"
-    if (verificationMethod = "V6") {
-        ; V6模式：显示多个硬件哈希
-        try {
-            deviceCodeV6 := GenerateDeviceCodeV6()
-            information := "=== V6 设备信息 ===`n"
-            information .= "CPU序列号: " . GetCpuSerial() . "`n"
-            information .= "CPU哈希: " . deviceCodeV6.cpu_hash . "`n"
-            information .= "UUID: " . GetSystemUUID() . "`n"
-            information .= "UUID哈希: " . deviceCodeV6.uuid_hash . "`n"
-            information .= "BIOS序列号: " . GetBIOSSerialNumber() . "`n"
-            information .= "BIOS哈希: " . deviceCodeV6.bios_hash . "`n"
-            information .= "主板序列号: " . GetBaseBoardSerialNumberV6() . "`n"
-            information .= "主板哈希: " . deviceCodeV6.board_hash . "`n"
-            information .= "硬盘序列号: " . GetDiskSerialNumberV6() . "`n"
-            information .= "硬盘哈希: " . deviceCodeV6.disk_hash . "`n"
-            information .= "MachineGuid: " . GetMachineGuid() . "`n"
-            information .= "GUID哈希: " . deviceCodeV6.guid_hash
-            A_Clipboard := information
-            MsgBox information
-            MsgBox("V6设备信息已复制到剪贴板")
-        } catch as e {
-            MsgBox("V6设备码生成失败: " . e.Message, "错误", "Icon!")
-        }
-    } else {
-        ; V4模式：显示单一设备码
-        mainBoardSerial := GetMainBoardSerial()
-        cpuSerial := GetCpuSerial()
-        diskSerial := GetDiskSerial()
-        Hashed := GenerateDeviceCode()
-        information := "=== V4 设备信息 ===`n"
-        information .= "主板序列号: " . mainBoardSerial . "`n"
-        information .= "CPU序列号: " . cpuSerial . "`n"
-        information .= "硬盘序列号: " . diskSerial . "`n"
-        information .= "设备码: " . Hashed
-        A_Clipboard := information
-        MsgBox information
-        MsgBox("V4设备信息已复制到剪贴板")
-    }
+    ; global g_numeric_settings
+    ; local verificationMethod := g_numeric_settings.Has("VerificationMethod") ? g_numeric_settings["VerificationMethod"] : "V6"
+    ; if (verificationMethod = "V6") {
+    ;     ; V6模式：显示多个硬件哈希
+    ;     try {
+    ;         deviceCodeV6 := GenerateDeviceCodeV6()
+    ;         information := "=== V6 设备信息 ===`n"
+    ;         information .= "CPU序列号: " . GetCpuSerial() . "`n"
+    ;         information .= "CPU哈希: " . deviceCodeV6.cpu_hash . "`n"
+    ;         information .= "UUID: " . GetSystemUUID() . "`n"
+    ;         information .= "UUID哈希: " . deviceCodeV6.uuid_hash . "`n"
+    ;         information .= "BIOS序列号: " . GetBIOSSerialNumber() . "`n"
+    ;         information .= "BIOS哈希: " . deviceCodeV6.bios_hash . "`n"
+    ;         information .= "主板序列号: " . GetBaseBoardSerialNumberV6() . "`n"
+    ;         information .= "主板哈希: " . deviceCodeV6.board_hash . "`n"
+    ;         information .= "硬盘序列号: " . GetDiskSerialNumberV6() . "`n"
+    ;         information .= "硬盘哈希: " . deviceCodeV6.disk_hash . "`n"
+    ;         information .= "MachineGuid: " . GetMachineGuid() . "`n"
+    ;         information .= "GUID哈希: " . deviceCodeV6.guid_hash
+    ;         A_Clipboard := information
+    ;         MsgBox information
+    ;         MsgBox("V6设备信息已复制到剪贴板")
+    ;     } catch as e {
+    ;         MsgBox("V6设备码生成失败: " . e.Message, "错误", "Icon!")
+    ;     }
+    ; } else {
+    ;     ; V4模式：显示单一设备码
+    ;     mainBoardSerial := GetMainBoardSerial()
+    ;     cpuSerial := GetCpuSerial()
+    ;     diskSerial := GetDiskSerial()
+    ;     Hashed := GenerateDeviceCode()
+    ;     information := "=== V4 设备信息 ===`n"
+    ;     information .= "主板序列号: " . mainBoardSerial . "`n"
+    ;     information .= "CPU序列号: " . cpuSerial . "`n"
+    ;     information .= "硬盘序列号: " . diskSerial . "`n"
+    ;     information .= "设备码: " . Hashed
+    ;     A_Clipboard := information
+    ;     MsgBox information
+    ;     MsgBox("V4设备信息已复制到剪贴板")
+    ; }
 }
 ;endregion 消息辅助函数
 ;region 数据辅助函数
@@ -6418,7 +6075,7 @@ InterceptionAnomaly() {
     FindText().Click(X, Y + 100 * TrueRatio, "L")
     Sleep 500
     Confirm
-    ;if t > 1 {
+    ; if t > 1 {
     Sleep 2000
     switch g_numeric_settings["InterceptionBoss"] {
         case 1:
@@ -6440,7 +6097,7 @@ InterceptionAnomaly() {
             MsgBox "BOSS选择错误！"
             Pause
     }
-    ;}
+    ; }
     Sleep 1000
     while True {
         if g_settings["InterceptionReminder"] {
@@ -8403,16 +8060,16 @@ AutoAdvance(*) {
 ;endregion 快捷键
 ;tag URL编码函数
 UriEncode(str) {
-    static chars := "0123456789ABCDEF"
+    buf := Buffer(StrPut(str, "UTF-8"))
+    StrPut(str, buf, "UTF-8")
     encoded := ""
-    for i, ch in StrSplit(str) {
-        code := Ord(ch)
-        if (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122) || ch = "-" || ch = "_" || ch = "." || ch = "~" {
-            encoded .= ch
-        } else if (ch = " ") {
-            encoded .= "+"
+    static chars := "0123456789ABCDEF"
+    loop buf.Size {
+        b := NumGet(buf, A_Index - 1, "UChar")
+        if (b >= 48 && b <= 57) || (b >= 65 && b <= 90) || (b >= 97 && b <= 122) || b = 45 || b = 95 || b = 46 || b = 126 {
+            encoded .= Chr(b)
         } else {
-            encoded .= "%" . SubStr(chars, (code >> 4) + 1, 1) . SubStr(chars, (code & 0xF) + 1, 1)
+            encoded .= "%" . SubStr(chars, (b >> 4) + 1, 1) . SubStr(chars, (b & 0xF) + 1, 1)
         }
     }
     return encoded
