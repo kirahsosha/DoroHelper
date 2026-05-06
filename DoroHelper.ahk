@@ -3826,7 +3826,7 @@ CheckUserGroup(forceUpdate := false) {
         } else if (g_numeric_settings["UserLevel"] == 1) {
             try TraySetIcon("icon\CopperDoro.ico")
         }
-        AddLog("当前用户组：" . g_numeric_settings["UserGroup"] . " (有效期至 " . formattedExpiryDate . ")   验证方式: " . highestMembership["VerificationMethod"] . "   数据源: " . currentSource, "Green")
+        ; AddLog("当前用户组：" . g_numeric_settings["UserGroup"] . " (有效期至 " . formattedExpiryDate . ")   验证方式: " . highestMembership["VerificationMethod"] . "   数据源: " . currentSource, "Green")
         ; 检查会员是否明天到期
         ; local tomorrowDate := SubStr(DateAdd(A_Now, 1, "Days"), 1, 8) ; 获取明天的日期 (YYYYMMDD)
         ; if (highestMembership["VirtualExpiryDate"] == tomorrowDate) {
@@ -3837,7 +3837,7 @@ CheckUserGroup(forceUpdate := false) {
         ;     }
         ; }
     } else {
-        AddLog("当前用户组：普通用户 (免费用户)   验证方式: " . highestMembership["VerificationMethod"] . "   数据源: " . currentSource, "Blue")
+        ; AddLog("当前用户组：普通用户 (免费用户)   验证方式: " . highestMembership["VerificationMethod"] . "   数据源: " . currentSource, "Blue")
         try TraySetIcon("doro.ico")
     }
     ; AddLog("欢迎加入反馈qq群584275905")
