@@ -3945,6 +3945,8 @@ ShowMigrationNotice(*) {
     AddLog("", "black")
     AddLog("在会员系统方面，新脚本将全面继承现有体系，并在不影响既有会员权益的前提下，对部分细节进行优化与调整。", "black")
     AddLog("", "black")
+    AddLog("新版 MDA 下载链接：https://github.com/1204244136/MDA/releases/latest", "blue")
+    AddLog("", "black")
     AddLog("至于旧版本，未来将基本停止维护，但不会下线，大家仍然可以正常获取与使用。如果新版本未能符合你的使用习惯，也欢迎继续选择旧版本。", "black")
     AddLog("", "black")
     AddLog("再次感谢大家的理解与支持！", "black")
